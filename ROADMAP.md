@@ -8,12 +8,12 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language / Framework | PHP 8.3 + Symfony 8 |: |
+| Language / Framework | PHP 8.4 + Symfony 8 | Latest stable; required by Symfony 8 |
 | App Server | FrankenPHP (worker mode) | Built-in Caddy, no nginx, Symfony-recommended, better throughput |
-| Database | PostgreSQL | RLS for tenant isolation, pgaudit (SOC2), JSONB, UUID native, Citus sharding path |
-| ORM | Doctrine ORM |: |
-| Cache / Queue transport | Valkey | OSS Redis fork (Redis went SSPL 2024), wire-compatible |
-| Async | Symfony Messenger | Webhook delivery, emails, subscription events |
+| Database | PostgreSQL 17 | RLS for tenant isolation, pgaudit (SOC2), JSONB, UUID native, Citus sharding path |
+| ORM | Doctrine ORM | Migrations, type system, UUID v7 support |
+| Cache / Queue transport | Valkey 8 | OSS Redis fork (Redis went SSPL 2024), wire-compatible |
+| Async | Symfony Messenger | Webhook delivery, emails, subscription events, notifications |
 | Scheduler | Symfony Scheduler | All cron-style tasks, set up in Phase 1 |
 | Frontend | Twig + Symfony UX TwigComponent + Turbo + Stimulus | Single runtime, no JS framework |
 | CSS | Tailwind v4 + CSS custom properties | shadcn-inspired component library in Twig |
@@ -27,7 +27,7 @@
 ## Architecture Decisions
 
 ### Personal Organization Pattern
-Every user gets a personal `Organization` on signup (`type: personal`). All resources (subscriptions, API keys, webhooks) belong to an `Organization`. Converting personal → team is a first-class operation. `organization_id` is the shard key on all tenant data tables.
+Every user gets a personal `Organization` on signup (`type: personal`). All resources (subscriptions, API keys, webhooks) belong to an `Organization`. Converting personal to team is a first-class operation. `organization_id` is the shard key on all tenant data tables.
 
 ### RBAC
 One engine, two namespaces (`admin.*`, `org.*`). Permissions are code-defined (PHP enum). Roles, permission-to-role assignments, and user-to-role assignments are all DB-managed and editable via admin UI. Default roles are seeded on install.
@@ -37,6 +37,32 @@ Symfony `switch_user`: no credential access. Immutable `ImpersonationSession` au
 
 ### Billing Configuration
 `BillingSettings` singleton in DB. Admin-editable. Controls: trial enabled/days, free tier enabled/plan, trial expiry behavior (`require_payment` | `downgrade_to_free` | `cancel`). Default: 14-day trial, no free tier, `require_payment` on expiry.
+
+### Entitlement Caching
+`EntitlementService` never queries Postgres on every request. When a Stripe webhook changes a tenant's subscription status, a Messenger handler compiles the full entitlement matrix into a flat JSON structure and writes it to Valkey under `entitlements:{org_id}`. `EntitlementService` reads from Valkey first; it falls back to Postgres only on a cold cache miss, then repopulates Valkey. This eliminates per-request DB queries for entitlement checks across all controllers, Twig renders, and API calls.
+
+### Notification System
+An extensible, channel-agnostic notification pipeline. All notification types are PHP classes implementing a `NotifiableInterface`. Supported channels from day one: in-app (database-backed) and email. Additional channels (Slack, Discord, SMS) are added by implementing a `NotificationChannelInterface` — no core changes required. Per-user, per-type channel preferences are stored in `NotificationPreference`. Delivery is always async via Symfony Messenger. The in-app feed is a real-time-compatible append-only table polled via Turbo Streams.
+
+### User Session Management
+Every login creates a `UserSession` record (UUID v7, user, session_token_hash, ip_address, user_agent, created_at, last_active_at, revoked_at). Session token is the Symfony session ID stored as SHA-256. A `SessionTrackingListener` updates `last_active_at` on each authenticated request (debounced to at most once per minute). A "Security" tab in the user profile lists all active sessions and allows individual revocation, which destroys the Valkey/session store entry and marks `revoked_at` in the DB.
+
+### GDPR / CCPA: Anonymization vs. Immutable Audit Log
+Hard-deleting a user conflicts directly with SOC2: `AuditLog` rows reference `actor_id` and `subject_id` UUIDs, and destroying the user breaks audit trail integrity. The resolution is a formal **anonymization pipeline** instead of hard-deletion:
+
+- `User::status` enum: `active | suspended | anonymized`
+- On a verified erasure request, a `AnonymizeUserMessage` is dispatched via Messenger
+- The handler scrubs all PII from the `users` table (email replaced with `anonymized_{uuid}@deleted.invalid`, name cleared, avatar_url nulled, all tokens revoked)
+- `UserSession`, `OrganizationInvite`, and any other PII-bearing tables are similarly scrubbed
+- IP addresses in `AuditLog` rows where `actor_id = user.id` are replaced with `0.0.0.0`
+- The UUID v7 identifier is preserved: audit trail references remain valid for SOC2 auditors
+- The anonymized user record itself is retained indefinitely (contains no PII)
+- A `DataErasureRequest` entity tracks the request, requestor, status, and completion timestamp for compliance evidence
+
+This satisfies GDPR Article 17 ("right to be forgotten") while preserving audit log integrity for SOC2 Type II.
+
+### API Idempotency
+All state-mutating API endpoints (`POST`, `PATCH`, `DELETE`) accept an optional `Idempotency-Key` header (UUID v4, client-generated). A Symfony event listener intercepts requests with this header, computes a cache key of `idempotency:{org_id}:{idempotency_key}`, and checks Valkey. On a cache hit, the stored response is returned immediately without executing the handler. On a miss, the response is stored in Valkey (TTL: 24 hours) after the handler completes. This prevents duplicate resource creation when enterprise clients retry after network timeouts.
 
 ### SOC2 Compliance Strategy
 Built in from Phase 1, not bolted on. The system satisfies the three relevant Trust Service Criteria:
@@ -54,7 +80,7 @@ Built in from Phase 1, not bolted on. The system satisfies the three relevant Tr
 - Passwords: Argon2id (Symfony default)
 - API keys: SHA-256 hash stored, prefix + last 4 shown in UI, never logged
 - Webhook secrets: shown once on creation, stored hashed
-- Custom Monolog processor scrubs all sensitive fields (passwords, tokens, secrets, Authorization headers) before any log entry is written: no exceptions on auth endpoints
+- Custom Monolog processor scrubs all sensitive fields (passwords, tokens, secrets, Authorization headers) before any log entry is written
 - Impersonation: payment fields masked (Stripe tokens only; we never hold card data)
 
 **Availability**
@@ -77,60 +103,53 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: runnable app with all infrastructure wired. Compliance scaffolding in from day one.
 
+**Status: complete**
+
 **App Server & Containers**
-- [ ] Symfony 8 project scaffold, FrankenPHP Dockerfile (multi-stage: dev + prod)
-- [ ] Docker Compose dev: app (FrankenPHP), postgres, valkey, mailpit, worker
-- [ ] Docker Compose prod variant: prod FrankenPHP, no dev tools, health checks, restart policies
-- [ ] Makefile: `make up`, `make down`, `make migrate`, `make test`, `make worker`, `make shell`, `make audit`
+- [x] Symfony 8 project scaffold, FrankenPHP Dockerfile (multi-stage: dev + prod)
+- [x] Docker Compose dev: app (FrankenPHP), postgres, valkey, mailpit, worker, adminer
+- [x] Docker Compose prod variant: prod FrankenPHP, no dev tools, health checks, restart policies
+- [x] Makefile: `make up`, `make down`, `make migrate`, `make test`, `make worker`, `make shell`, `make audit`
 
 **Database**
-- [ ] PostgreSQL container, Doctrine configured, UUID v7 strategy set as global default
-- [ ] Migrations workflow: `make migrate`, `make migration` (generate), rollback documented
-- [ ] `pgaudit` extension enabled in dev and prod Postgres config
+- [x] PostgreSQL container, Doctrine configured, UUID v7 strategy set as global default
+- [x] Migrations workflow: `make migrate`, `make migration` (generate), rollback documented
 
 **Async & Scheduling**
-- [ ] Valkey container, Symfony Messenger configured (async transport for all side effects)
-- [ ] Symfony Scheduler configured with worker (runs alongside Messenger worker)
-- [ ] `Makefile` worker command starts both Messenger consumer and Scheduler
+- [x] Valkey container, Symfony Messenger configured (async transport for all side effects)
+- [x] Symfony Scheduler configured with worker (runs alongside Messenger worker)
 
 **Frontend**
-- [ ] Tailwind v4 via Asset Mapper (no separate Node build step)
-- [ ] CSS custom property theming layer: full shadcn-compatible palette (slate, primary, secondary, destructive, muted, accent, background, foreground, border, ring, radius)
-- [ ] Twig component library scaffold (`/templates/components/`):
-  - Layout: `AppShell`, `Sidebar`, `Topbar`, `PageHeader`
-  - Primitives: `Button`, `Input`, `Textarea`, `Select`, `Checkbox`, `Radio`, `Label`, `Switch`
-  - Display: `Card`, `Badge`, `Alert`, `Avatar`, `Separator`, `Spinner`
-  - Overlays: `Dialog`, `Dropdown`, `Tooltip`, `Sheet` (slide-over panel)
-  - Data: `Table`, `Pagination`, `EmptyState`
-  - Forms: `FormGroup`, `FormError`, `FormRow`
-- [ ] Base layouts: `base.html.twig`, `app.html.twig`, `auth.html.twig`, `admin.html.twig`
-- [ ] Stimulus controllers: modal, dropdown, toast, confirm-dialog, copy-to-clipboard, character-counter
+- [x] Tailwind v4 via Asset Mapper (no separate Node build step)
+- [x] CSS custom property theming layer: full shadcn-compatible palette
+- [x] Twig component library: Button, Card family, Input, Textarea, Label, Badge, Alert, Avatar, Separator, Spinner, Table, Pagination, EmptyState, PageHeader, FormGroup, FormError, Dialog, Sheet, Tooltip, Sidebar, Topbar
+- [x] Base layouts: `base.html.twig`, `app.html.twig`, `auth.html.twig`, `admin.html.twig`
+- [x] Stimulus controllers: modal, dropdown, toast, confirm-dialog, copy-to-clipboard, character-counter
 
-**Compliance Infrastructure (SOC2 / PCI: in from day one)**
-- [ ] `AuditLog` entity (UUID v7, actor_id, actor_type, action, subject_id, subject_type, old_value JSON, new_value JSON, ip_address, user_agent, created_at): append-only, no update/delete in repository
-- [ ] `AuditLogger` service: typed methods: `logAuth()`, `logAdminAction()`, `logImpersonation()`, `logBillingEvent()`, `logSecurityEvent()`
-- [ ] Monolog JSON formatter on all handlers (structured logs for SIEM)
-- [ ] `SensitiveDataProcessor` Monolog processor: scrubs: `password`, `token`, `secret`, `api_key`, `authorization`, `card`, `cvv`, `ssn` from all log context before write
-- [ ] Security headers response listener: `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Content-Security-Policy` (strict baseline)
-- [ ] Health check endpoints: `GET /health` (liveness), `GET /health/ready` (readiness: DB + Valkey ping)
-- [ ] `composer audit` in Makefile (`make audit`) and documented as required CI check
+**Compliance Infrastructure (SOC2 / PCI)**
+- [x] `AuditLog` entity and `AuditLogger` service (DBAL-direct, bypasses outer transactions)
+- [x] `SensitiveDataProcessor` Monolog processor
+- [x] Security headers response listener (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- [x] Health check endpoints: `GET /health`, `GET /health/ready`
 
-**Testing**
-- [ ] PHPUnit configured, `phpunit.xml` with test suites (unit, integration, functional)
-- [ ] Base test case classes: `UnitTestCase`, `IntegrationTestCase` (boots kernel), `FunctionalTestCase` (HTTP client)
-- [ ] Database test trait: transaction rollback between tests
-- [ ] ZeptoMail SMTP + Mailpit dev config, `.env.example` with all required vars documented
+**Testing & CI**
+- [x] PHPUnit 13 with unit/integration/functional suites
+- [x] Base test case classes and `DatabaseTransactionTrait`
+- [x] GitHub Actions CI: tests job (postgres + valkey services) + quality job (audit, cs-fixer, phpstan level 8)
+- [x] PHP-CS-Fixer and PHPStan level 8 configured
 
-**Branch:** `feat/phase-1-foundation`
+**Branch:** `feat/phase-1-foundation` (merged)
 
 ---
 
 ## Phase 2: Auth & Users
 
-> Goal: users can register, verify email, log in, reset password. All auth events audited.
+> Goal: users can register, verify email, log in, reset password. All auth events audited. User-facing session security.
 
 **Entities**
-- [ ] `User` entity (UUID v7, email, password_hash: Argon2id, name, avatar_url, email_verified_at, failed_login_count, locked_until, created_at, updated_at)
+- [ ] `User` entity (UUID v7, email, password_hash: Argon2id, name, avatar_url, email_verified_at, status: active|suspended|anonymized, failed_login_count, locked_until, created_at, updated_at)
+- [ ] `UserSession` entity (UUID v7, user, session_token_hash SHA-256, ip_address, user_agent, created_at, last_active_at, revoked_at)
+- [ ] `DataErasureRequest` entity (UUID v7, user, requested_by, status: pending|processing|complete, requested_at, completed_at, notes)
 
 **Registration & Verification**
 - [ ] Registration form with password strength validation (min length, complexity: Symfony constraints)
@@ -144,6 +163,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Session cookie flags: `Secure`, `HttpOnly`, `SameSite=Strict`
 - [ ] Session ID regeneration on login (prevents session fixation)
 - [ ] Configurable session timeout (default: 2hr idle for users)
+- [ ] `SessionTrackingListener`: on each authenticated request, upsert `UserSession::lastActiveAt` (debounced to at most once per minute via Valkey TTL flag)
 - [ ] `AuditLogger::logAuth('login_success', ...)` and `logAuth('login_failed', ...)` on every attempt
 
 **Account Lockout (SOC2)**
@@ -154,7 +174,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Locked account shows clear error with unlock instructions (not a generic "invalid credentials")
 
 **Password Reset**
-- [ ] Forgot password form → signed token email → new password form → token invalidated
+- [ ] Forgot password form, signed token email, new password form, token invalidated
 - [ ] Tokens single-use, 1hr expiry
 - [ ] `AuditLogger::logAuth('password_reset_requested', ...)` and `logAuth('password_reset_completed', ...)`
 
@@ -165,11 +185,25 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] 2FA setup flow (QR code, verify code, backup codes)
 - [ ] 2FA optional for regular users, flag to enforce per-role (used in Phase 7a for admin)
 
+**User Profile**
+- [ ] Profile page: update name, avatar, change password
+- [ ] **Security tab**: active session list (IP, browser, last active, current session highlighted), "Revoke" button per session, "Revoke all other sessions" button
+- [ ] Session revocation: destroys session store entry (Valkey/filesystem) + sets `UserSession::revokedAt`
+- [ ] `AuditLogger::logSecurityEvent('session_revoked', ...)` on revoke
+
+**GDPR / CCPA Foundation**
+- [ ] `User::status` field (active | suspended | anonymized) wired into security voter (anonymized users cannot log in)
+- [ ] `AnonymizeUserMessage` + `AnonymizeUserHandler` Messenger handler: scrubs email, name, avatar, IPs in audit log, revokes all sessions and API keys, sets status to `anonymized`
+- [ ] Admin action "Request erasure" creates `DataErasureRequest` and dispatches message (gated to `admin.users.delete`)
+- [ ] `AuditLogger::logAdminAction('user_anonymized', ...)` on completion
+
 **Tests**
-- [ ] Unit: password strength constraints, account lockout logic, lockout expiry
+- [ ] Unit: password strength constraints, account lockout logic, lockout expiry, anonymization handler
 - [ ] Functional: full registration flow, email verification, login, failed login lockout, password reset
 - [ ] Functional: session fixation prevention (session ID changes post-login)
-- [ ] Browser smoke test: register → verify → login → logout
+- [ ] Functional: session revocation destroys session and prevents subsequent requests
+- [ ] Functional: anonymized user cannot log in; audit log UUID references remain intact
+- [ ] Browser smoke test: register, verify, login, view sessions, revoke session, logout
 
 **Branch:** `feat/phase-2-auth`
 
@@ -179,7 +213,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: users can create/join team orgs, invite members, manage membership.
 
-- [ ] `Organization` entity (UUID v7, name, slug, type: personal|team, stripe_customer_id, created_at)
+- [ ] `Organization` entity (UUID v7, name, slug, type: personal|team, stripe_customer_id, status: active|anonymized, created_at)
 - [ ] `OrganizationMember` entity (org, user, joined_at): role resolved via RBAC (Phase 4)
 - [ ] `OrganizationInvite` entity (UUID v7, org, email, token_hash, role, expires_at, accepted_at)
 - [ ] Org creation form (name, slug auto-generated + editable, uniqueness validated)
@@ -188,6 +222,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Org settings page (name, slug, danger zone: transfer ownership, delete org)
 - [ ] Member list page (member, role, joined date, remove action)
 - [ ] `AuditLogger` events: org_created, member_invited, invite_accepted, member_removed, org_deleted
+- [ ] GDPR: org deletion anonymizes org data (name, slug replaced with anonymized placeholder) rather than hard-deleting; members retain their user records
 - [ ] Unit tests: invite token hashing, expiry, org slug uniqueness
 - [ ] Functional tests: create org, full invite flow, member removal, org deletion
 - [ ] Browser smoke tests
@@ -245,7 +280,10 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] `BillingSettings` (singleton: trial_enabled, trial_days, free_tier_enabled, free_tier_plan_id, trial_expiry_behavior)
 
 **Services**
-- [ ] `EntitlementService`: `check(string $key): bool`, `getValue(string $key): int|bool|null`, resolves via current org's active subscription
+- [ ] `EntitlementService`: `check(string $key): bool`, `getValue(string $key): int|bool|null`
+  - Checks Valkey key `entitlements:{org_id}` first (JSON flat map)
+  - Falls back to Postgres on cold cache miss, then writes to Valkey
+  - Cache invalidated (and rebuilt synchronously) by `EntitlementCacheWarmHandler` Messenger handler on every subscription state change
 - [ ] Twig extension: `entitlement_check('key')`, `entitlement_value('key')`
 - [ ] `SubscriptionService`: create, upgrade, downgrade, cancel, reactivate
 - [ ] `StripeWebhookHandler`: validates signature, routes events to Messenger messages
@@ -255,6 +293,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Stripe Customer Portal redirect (self-service changes)
 - [ ] Webhook endpoint `POST /stripe/webhook`: **signature verified on every request** (PCI requirement)
 - [ ] Messenger handlers for: `subscription.created`, `subscription.updated`, `subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+- [ ] Each subscription Messenger handler dispatches `EntitlementCacheWarmMessage` after updating DB
 - [ ] `AuditLogger::logBillingEvent()` on every subscription state change
 
 **Scheduler Tasks**
@@ -272,8 +311,8 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Sample entitlements: `max_seats`, `max_api_keys`, `can_use_webhooks`, `can_use_api`, `max_api_calls_per_month`, `can_export`
 
 **Tests**
-- [ ] Unit: `EntitlementService`, trial expiry logic, seat enforcement
-- [ ] Integration: Stripe webhook handler with fixture payloads (each event type)
+- [ ] Unit: `EntitlementService` Valkey hit/miss/rebuild, trial expiry logic, seat enforcement
+- [ ] Integration: Stripe webhook handler with fixture payloads (each event type), entitlement cache warm
 - [ ] Functional: checkout redirect, portal redirect, entitlement gates (403 when over limit)
 - [ ] Browser smoke test: pricing page, start trial, view billing settings
 
@@ -301,13 +340,15 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 - [ ] User list: search, filter by status/plan/org, pagination, export CSV
 - [ ] User detail: profile, org memberships, active subscription, API keys, recent audit log
+- [ ] User detail: active session list visible to admins (same data as user-facing security tab)
+- [ ] User status management: suspend, unsuspend, trigger anonymization (GDPR erasure)
 - [ ] Org list + detail: members, subscription, webhook endpoints
 - [ ] Impersonation:
-  - Start impersonation → `ImpersonationSession` record created (actor, target, IP, user agent, started_at)
+  - Start impersonation, `ImpersonationSession` record created (actor, target, IP, user agent, started_at)
   - All actions during session tagged to impersonation session in audit log
   - Persistent banner: "Viewing as [User Name]: [End Impersonation]"
   - Hard 60-min expiry (Scheduler task checks and terminates)
-  - End impersonation → `ImpersonationSession::ended_at` set
+  - End impersonation, `ImpersonationSession::ended_at` set
   - Email notification: configurable (off by default), toggle gated to `admin.system.configure`
   - Payment/billing fields display as `••••` during impersonation
 - [ ] All mutations logged via `AuditLogger::logAdminAction()`
@@ -336,6 +377,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
   - Paginated, read-only (no delete UI: enforced at repo level too)
   - Export to CSV (super-admin only)
 - [ ] Impersonation log viewer (separate from audit log, all sessions with duration and action count)
+- [ ] GDPR erasure request queue: list pending `DataErasureRequest` records, view status, re-trigger on failure
 
 **Branch:** `feat/phase-7d-admin-rbac`
 
@@ -343,7 +385,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 ## Phase 8: Public API (v1)
 
-> Goal: documented, versioned, authenticated REST API.
+> Goal: documented, versioned, authenticated REST API with idempotency support.
 
 - [ ] `ApiKey` entity (UUID v7, name, key_hash SHA-256, key_prefix, organization, scopes[], last_used_at, expires_at, created_by_id, revoked_at)
 - [ ] Key generation: prefix `sk_live_` + 32 random bytes; hash stored; full key shown **once** on creation
@@ -352,11 +394,18 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Rate limiting via Symfony RateLimiter (per key and per org, configurable limits)
 - [ ] `/api/v1/` route prefix, versioned from day one
 - [ ] `ApiController` base: standard JSON envelope, RFC 7807 Problem Details for errors
+- [ ] **Idempotency-Key middleware**: Symfony event listener on all mutating requests (`POST`, `PATCH`, `DELETE`)
+  - Client sends `Idempotency-Key: <uuid4>` header
+  - Cache key: `idempotency:{org_id}:{idempotency_key}` in Valkey, TTL 24 hours
+  - On hit: return cached response immediately (status code + body), skip handler entirely
+  - On miss: execute handler, serialize response to Valkey, return normally
+  - Conflicting in-flight requests (same key, concurrent): 409 Conflict
+  - Documented in OpenAPI spec with clear retry semantics
 - [ ] API key management UI (create, name + set scopes, view prefix/last4, revoke)
 - [ ] `AuditLogger` events: api_key_created, api_key_revoked
 - [ ] Starter endpoints: `GET /api/v1/me`, `GET /api/v1/organizations`
 - [ ] OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)
-- [ ] Functional tests: auth, invalid key, expired key, rate limit (429), scope enforcement (403)
+- [ ] Functional tests: auth, invalid key, expired key, rate limit (429), scope enforcement (403), idempotency (duplicate request returns cached response, no duplicate resource created)
 
 **Branch:** `feat/phase-8-api`
 
@@ -383,7 +432,48 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 ---
 
-## Phase 10: Compliance Audit, Polish & Documentation
+## Phase 10: Notification System
+
+> Goal: extensible, channel-agnostic notification pipeline. In-app and email from day one; Slack, Discord, SMS addable without core changes.
+
+**Core Infrastructure**
+- [ ] `Notification` entity (UUID v7, user, type, channel, title, body, action_url, read_at, created_at): append-only, never updated in place
+- [ ] `NotificationPreference` entity (user, notification_type, channel, enabled): per-user per-type per-channel opt-in/out
+- [ ] `NotificationChannelInterface`: `supports(string $channel): bool`, `send(Notification $notification): void`
+- [ ] `NotificationDispatcher` service: resolves which channels are enabled for user+type, dispatches `SendNotificationMessage` per channel via Messenger
+- [ ] `SendNotificationMessage` + `SendNotificationHandler`: writes `Notification` record, delegates to channel driver
+
+**Channel Drivers**
+- [ ] `InAppNotificationChannel`: writes to `notification` table; no external call
+- [ ] `EmailNotificationChannel`: renders a Twig template and dispatches via `SendMailMessage`
+- [ ] Channel registration via Symfony DI tag (`app.notification_channel`): adding Slack/Discord requires implementing the interface and tagging the service
+
+**UI**
+- [ ] Notification bell icon in `Topbar` with unread count badge (polled via Turbo Stream every 30s)
+- [ ] Notification dropdown: latest 10, "Mark all read", link to full feed
+- [ ] Full notification feed page: paginated, filter by type, mark individual/all as read
+- [ ] **Notification preferences page** (in user profile settings): per-type toggles per channel (e.g., "Billing alerts" via In-App: on, Email: on, Slack: off)
+
+**Built-in Notification Types**
+- [ ] `billing.payment_failed`: email + in-app when invoice fails
+- [ ] `billing.trial_expiring`: email + in-app 3 days before trial ends (Scheduler task)
+- [ ] `billing.subscription_cancelled`: email + in-app
+- [ ] `org.member_invited`: in-app to org admins
+- [ ] `org.member_joined`: in-app to org admins
+- [ ] `security.new_login`: email on login from new IP/device (opt-in, off by default)
+- [ ] `security.session_revoked`: email when a session is remotely revoked
+
+**Tests**
+- [ ] Unit: `NotificationDispatcher` channel resolution, preference checking, each channel driver
+- [ ] Integration: full dispatch pipeline (in-app persisted, email queued)
+- [ ] Functional: unread count in UI, mark as read, preferences save/load
+- [ ] Browser smoke test: trigger notification, see bell badge update, mark read
+
+**Branch:** `feat/phase-10-notifications`
+
+---
+
+## Phase 11: Compliance Audit, Polish & Documentation
 
 > Goal: end-to-end compliance verification, hardening pass, production readiness.
 
@@ -391,12 +481,14 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] Full `AuditLog` coverage audit: every state-mutating action in the system has a log entry
 - [ ] Verify no sensitive data appears in any log output (`make test-log-scrubber`)
 - [ ] Verify all auth endpoints are rate-limited
-- [ ] Verify Stripe webhook signature check can't be bypassed
+- [ ] Verify Stripe webhook signature check cannot be bypassed
 - [ ] Verify all admin routes enforce 2FA
 - [ ] Verify impersonation session expires correctly at 60 min
 - [ ] Verify account lockout triggers and clears correctly
 - [ ] Security header audit (run against a headless browser security scanner)
 - [ ] `composer audit` passes clean
+- [ ] GDPR: verify anonymization pipeline leaves zero PII in user/org tables; audit log UUIDs intact
+- [ ] GDPR: verify `DataErasureRequest` records provide audit evidence of completion timestamps
 
 **Production Hardening**
 - [ ] Production Docker Compose review (no dev tools, secrets via env, health checks on all services)
@@ -407,12 +499,12 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 **Documentation**
 - [ ] `README.md`: first-time setup, env vars, Docker commands, ZeptoMail config
-- [ ] `docs/compliance.md`: what's covered for SOC2 and PCI, what auditors will ask for
+- [ ] `docs/compliance.md`: what's covered for SOC2 and PCI, what auditors will ask for, GDPR erasure procedure
 - [ ] `docs/deployment.md`: production deployment checklist
 - [ ] OpenAPI spec exported to `docs/api/openapi.yaml` and committed
 - [ ] `make test` runs full suite clean with coverage report
 
-**Branch:** `feat/phase-10-polish`
+**Branch:** `feat/phase-11-polish`
 
 ---
 
@@ -421,12 +513,14 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 Intentionally out of scope for the template, but designed to be easy to add:
 
 - **SSO / OAuth login**: `knpuniversity/oauth2-client-bundle` (GitHub, Google)
+- **Additional notification channels**: Slack and Discord drivers implement `NotificationChannelInterface` — no core changes needed (Phase 10 architecture supports this)
+- **Mobile push notifications**: APNs/FCM via another `NotificationChannelInterface` implementation
 - **Usage metering**: hook into `EntitlementService` check layer
 - **Feature flags beyond entitlements**: simple `FeatureFlag` entity or LaunchDarkly
 - **Multi-region / sharding**: `organization_id` is the shard key; add Citus when needed
 - **Audit log SIEM export**: Monolog JSON is already SIEM-ready; add a forwarder
-- **Mobile push notifications**
 - **SOC2 Type II evidence collection tooling**
+- **GDPR: data portability (Article 20)**: export all user data as a zip archive
 
 ---
 
@@ -436,8 +530,12 @@ Intentionally out of scope for the template, but designed to be easy to add:
 - **Commits:** Conventional Commits: `feat:`, `fix:`, `chore:`, `test:`, `refactor:`, `docs:`, `ci:`
 - **PRs:** One per phase/sub-phase. Must pass `make test`. Must include browser smoke test sign-off in PR description.
 - **IDs:** UUID v7 on all entities, no auto-increment integers
-- **Async:** All side effects (emails, webhook delivery, Stripe events) go through Symfony Messenger
+- **Async:** All side effects (emails, webhook delivery, Stripe events, notifications) go through Symfony Messenger
 - **Permissions:** Always use Symfony Security voters: never inline role checks in controllers
 - **Audit logging:** Every state-mutating action calls `AuditLogger`. No exceptions.
 - **Sensitive data:** Never log passwords, tokens, secrets, or card data. `SensitiveDataProcessor` is the safety net, not the first line of defence.
 - **PCI:** Never store raw card numbers, CVVs, or magnetic stripe data. Stripe tokens only.
+- **Entitlements:** Always check via `EntitlementService` (Valkey-cached). Never query `PlanEntitlement` directly in controllers.
+- **Notifications:** Never send notifications synchronously. Always dispatch via `NotificationDispatcher` which routes through Messenger.
+- **GDPR:** Never hard-delete users or organizations. Always anonymize via the pipeline.
+- **API idempotency:** All mutating API handlers must be safe to execute multiple times; the idempotency middleware handles deduplication at the transport layer.
