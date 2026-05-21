@@ -1,0 +1,26 @@
+{
+    {$CADDY_GLOBAL_OPTIONS}
+
+    frankenphp {
+        worker {
+            file ./public/index.php
+            num {$WORKER_NUM:auto}
+        }
+    }
+
+    admin off
+}
+
+{$SERVER_NAME:localhost} {
+    log {
+        output stderr
+        format json
+        level {$LOG_LEVEL:WARN}
+    }
+
+    encode zstd br gzip
+
+    root * /app/public
+
+    php_server
+}

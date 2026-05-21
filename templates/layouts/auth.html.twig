@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+    <div class="w-full max-w-md space-y-8">
+        <div class="text-center">
+            <a href="{{ path('app_home') }}" class="inline-block text-2xl font-bold text-foreground">
+                {{ app_name|default('SaaS Template') }}
+            </a>
+        </div>
+        {% block auth_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

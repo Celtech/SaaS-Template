@@ -1,0 +1,57 @@
+{% props currentPage = 1, totalPages = 1, routeName = '', routeParams = {}, class = '' %}
+{% if totalPages > 1 %}
+<nav class="flex items-center justify-center gap-1 {{ class }}" aria-label="Pagination">
+    {% if currentPage > 1 %}
+        <a
+            href="{{ path(routeName, routeParams|merge({page: currentPage - 1})) }}"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm hover:bg-accent hover:text-accent-foreground"
+            aria-label="Previous page"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+    {% else %}
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm opacity-50 cursor-not-allowed" aria-disabled="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </span>
+    {% endif %}
+
+    {% set windowStart = [1, currentPage - 2]|max %}
+    {% set windowEnd = [totalPages, currentPage + 2]|min %}
+
+    {% if windowStart > 1 %}
+        <a href="{{ path(routeName, routeParams|merge({page: 1})) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm hover:bg-accent">1</a>
+        {% if windowStart > 2 %}
+            <span class="inline-flex h-9 w-9 items-center justify-center text-sm text-muted-foreground">...</span>
+        {% endif %}
+    {% endif %}
+
+    {% for page in windowStart..windowEnd %}
+        {% if page == currentPage %}
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground" aria-current="page">{{ page }}</span>
+        {% else %}
+            <a href="{{ path(routeName, routeParams|merge({page: page})) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm hover:bg-accent">{{ page }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if windowEnd < totalPages %}
+        {% if windowEnd < totalPages - 1 %}
+            <span class="inline-flex h-9 w-9 items-center justify-center text-sm text-muted-foreground">...</span>
+        {% endif %}
+        <a href="{{ path(routeName, routeParams|merge({page: totalPages})) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm hover:bg-accent">{{ totalPages }}</a>
+    {% endif %}
+
+    {% if currentPage < totalPages %}
+        <a
+            href="{{ path(routeName, routeParams|merge({page: currentPage + 1})) }}"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm hover:bg-accent hover:text-accent-foreground"
+            aria-label="Next page"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+    {% else %}
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-sm opacity-50 cursor-not-allowed" aria-disabled="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+    {% endif %}
+</nav>
+{% endif %}

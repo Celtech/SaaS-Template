@@ -1,0 +1,26 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-doctrine/rules.neon
+
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+        consoleApplicationLoader: tests/console-application.php
+
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
+
+    ignoreErrors:
+        # Symfony magic methods on controllers
+        - '#Call to an undefined method Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController::#'
+
+    excludePaths:
+        - src/Kernel.php
+
+    treatPhpDocTypesAsCertain: false

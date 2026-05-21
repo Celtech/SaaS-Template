@@ -1,0 +1,5 @@
+{% props orientation = 'horizontal', class = '' %}
+<div
+    role="separator"
+    class="{% if orientation == 'vertical' %}inline-block h-full w-px{% else %}block h-px w-full{% endif %} bg-border {{ class }}"
+></div>

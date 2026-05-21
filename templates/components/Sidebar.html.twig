@@ -1,0 +1,36 @@
+{# Props: admin (bool) — renders admin nav vs user nav #}
+{% props admin = false %}
+<aside class="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar-background">
+    <div class="flex h-16 items-center border-b border-sidebar-border px-6">
+        <a href="{{ admin ? path('admin_dashboard') : path('app_dashboard') }}" class="text-lg font-bold text-sidebar-foreground">
+            {{ app_name|default('SaaS Template') }}
+            {% if admin %}
+                <span class="ml-2 text-xs font-normal text-sidebar-foreground/60">Admin</span>
+            {% endif %}
+        </a>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-4 py-4">
+        {% if admin %}
+            {% block admin_nav %}
+                <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">Management</p>
+                {# Admin nav items populated in Phase 7 #}
+                <p class="px-2 py-2 text-sm text-sidebar-foreground/50">Nav items coming in Phase 7</p>
+            {% endblock %}
+        {% else %}
+            {% block app_nav %}
+                {# App nav items populated in subsequent phases #}
+                <p class="px-2 py-2 text-sm text-sidebar-foreground/50">Nav items coming in Phase 2+</p>
+            {% endblock %}
+        {% endif %}
+    </nav>
+    <div class="border-t border-sidebar-border p-4">
+        {% if app.user %}
+            <div class="flex items-center gap-3">
+                <twig:Avatar fallback="{{ app.user.email|slice(0,2) }}" size="sm" />
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-sidebar-foreground">{{ app.user.email }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</aside>
