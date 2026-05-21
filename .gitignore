@@ -1,0 +1,29 @@
+# Symfony
+/vendor/
+/var/
+/.env
+/.env.local
+/.env.*.local
+
+# Docker local overrides
+docker-compose.override.yml
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/public/assets/
+/public/build/
+
+# Test coverage
+/coverage/
+
+# Logs
+*.log
