@@ -1,0 +1,15 @@
+{# Props: title, description #}
+{% props title = '', description = '', class = '' %}
+<div class="mb-8 flex items-start justify-between {{ class }}">
+    <div>
+        {% if title %}
+            <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ title }}</h1>
+        {% endif %}
+        {% if description %}
+            <p class="mt-1 text-sm text-muted-foreground">{{ description }}</p>
+        {% endif %}
+    </div>
+    {% if block('actions') is defined %}
+        <div class="flex items-center gap-2">{{ block('actions') }}</div>
+    {% endif %}
+</div>

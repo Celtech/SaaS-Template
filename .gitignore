@@ -5,6 +5,9 @@
 /.env.local
 /.env.*.local
 
+# Tailwind compiled output (generated at build time)
+/public/assets/tailwind.output.css
+
 # Docker local overrides
 docker-compose.override.yml
 
@@ -27,3 +30,16 @@ Thumbs.db
 
 # Logs
 *.log
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> phpunit/phpunit ###
+/.phpunit.cache/
+###< phpunit/phpunit ###

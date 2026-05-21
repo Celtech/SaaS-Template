@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" class="{{ app.request.cookies.get('theme') == 'dark' ? 'dark' : '' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - {{ app_name|default('SaaS Template') }}</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
+    {% block stylesheets %}{% endblock %}
+    {% block javascripts %}
+        {% block importmap %}{{ importmap('app') }}{% endblock %}
+    {% endblock %}
+    {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
+    {% if frankenphpHotReload %}
+        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
+        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
+        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+    {% endif %}
+</head>
+<body class="min-h-screen bg-background font-sans antialiased">
+    {% block flashes %}
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div
+                    data-controller="toast"
+                    data-toast-duration-value="4000"
+                    class="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg transition-all duration-300
+                        {% if type == 'success' %}bg-success text-success-foreground border-success
+                        {% elseif type == 'error' %}bg-destructive text-destructive-foreground border-destructive
+                        {% elseif type == 'warning' %}bg-warning text-warning-foreground border-warning
+                        {% else %}bg-card text-card-foreground border-border{% endif %}"
+                    role="alert"
+                >
+                    <span>{{ message }}</span>
+                    <button data-action="toast#dismiss" class="ml-2 opacity-70 hover:opacity-100" aria-label="Dismiss">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endblock %}
+    {% block body %}{% endblock %}
+</body>
+</html>

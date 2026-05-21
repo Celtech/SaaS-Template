@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="flex h-screen overflow-hidden bg-background">
+    <twig:Sidebar />
+    <div class="flex flex-1 flex-col overflow-hidden">
+        <twig:Topbar />
+        <main class="flex-1 overflow-y-auto px-6 py-8">
+            {% block main %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}
