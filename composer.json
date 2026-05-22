@@ -10,6 +10,9 @@
         "doctrine/doctrine-bundle": "*",
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
+        "scheb/2fa-bundle": "^8.5",
+        "scheb/2fa-totp": "^8.5",
+        "symfony/asset": "8.0.*",
         "symfony/asset-mapper": "*",
         "symfony/console": "8.0.*",
         "symfony/dotenv": "8.0.*",
@@ -23,6 +26,7 @@
         "symfony/monolog-bundle": "*",
         "symfony/property-access": "*",
         "symfony/rate-limiter": "*",
+        "symfony/redis-messenger": "8.0.*",
         "symfony/runtime": "8.0.*",
         "symfony/scheduler": "*",
         "symfony/security-bundle": "*",
@@ -98,11 +102,11 @@
         "phpstan/phpstan": "*",
         "phpstan/phpstan-doctrine": "*",
         "phpstan/phpstan-symfony": "*",
+        "phpunit/phpunit": "^13.1",
         "symfony/browser-kit": "8.0.*",
         "symfony/css-selector": "8.0.*",
         "symfony/debug-bundle": "8.0.*",
         "symfony/maker-bundle": "*",
-        "symfony/test-pack": "*",
         "symfony/web-profiler-bundle": "8.0.*"
     }
 }

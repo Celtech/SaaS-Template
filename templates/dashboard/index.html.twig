@@ -1,0 +1,31 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block main %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Dashboard</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Welcome back, {{ app.user.name }}.</p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-sm font-medium text-muted-foreground">Account</p>
+            <p class="mt-1 text-lg font-semibold text-card-foreground">{{ app.user.email }}</p>
+        </div>
+        <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-sm font-medium text-muted-foreground">Email verified</p>
+            <p class="mt-1 text-lg font-semibold {% if app.user.emailVerified %}text-success{% else %}text-warning{% endif %}">
+                {% if app.user.emailVerified %}Verified{% else %}Pending{% endif %}
+            </p>
+        </div>
+        <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-sm font-medium text-muted-foreground">2FA</p>
+            <p class="mt-1 text-lg font-semibold {% if app.user.totpEnabled %}text-success{% else %}text-muted-foreground{% endif %}">
+                {% if app.user.totpEnabled %}Enabled{% else %}Disabled{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock main %}

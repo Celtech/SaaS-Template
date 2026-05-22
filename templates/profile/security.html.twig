@@ -1,0 +1,132 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Security{% endblock %}
+
+{% block main %}
+<div class="max-w-2xl space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Profile</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage your account information</p>
+    </div>
+
+    <div class="flex gap-4 border-b text-sm">
+        <a href="{{ path('profile_index') }}" class="pb-3 text-muted-foreground hover:text-foreground">
+            General
+        </a>
+        <a href="{{ path('profile_security') }}" class="border-b-2 border-primary pb-3 font-medium text-foreground">
+            Security
+        </a>
+    </div>
+
+    {# Change password #}
+    <div class="rounded-xl border bg-card p-6 shadow-sm">
+        <h2 class="mb-4 text-base font-semibold text-card-foreground">Change password</h2>
+
+        {{ form_start(changePasswordForm, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+
+            <div class="space-y-1">
+                {{ form_label(changePasswordForm.currentPassword, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(changePasswordForm.currentPassword, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'current-password'}}) }}
+                {{ form_errors(changePasswordForm.currentPassword) }}
+            </div>
+
+            <div class="space-y-1">
+                {{ form_label(changePasswordForm.newPassword.first, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(changePasswordForm.newPassword.first, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
+                {{ form_errors(changePasswordForm.newPassword.first) }}
+            </div>
+
+            <div class="space-y-1">
+                {{ form_label(changePasswordForm.newPassword.second, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(changePasswordForm.newPassword.second, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
+                {{ form_errors(changePasswordForm.newPassword.second) }}
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Update password
+                </button>
+            </div>
+
+        {{ form_end(changePasswordForm) }}
+    </div>
+
+    {# Two-factor authentication #}
+    <div class="rounded-xl border bg-card p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-card-foreground">Two-factor authentication</h2>
+                <p class="mt-1 text-sm text-muted-foreground">Add an extra layer of security to your account.</p>
+            </div>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                {% if user.totpEnabled %}bg-success/10 text-success{% else %}bg-muted text-muted-foreground{% endif %}">
+                {% if user.totpEnabled %}Enabled{% else %}Disabled{% endif %}
+            </span>
+        </div>
+        {# TOTP setup flow will be added in a follow-up #}
+    </div>
+
+    {# Active sessions #}
+    <div class="rounded-xl border bg-card p-6 shadow-sm">
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold text-card-foreground">Active sessions</h2>
+                <p class="mt-1 text-sm text-muted-foreground">Devices currently signed in to your account.</p>
+            </div>
+            {% if activeSessions|length > 1 %}
+                <form method="post" action="{{ path('profile_sessions_revoke_all') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('revoke_all_sessions') }}">
+                    <button type="submit" class="text-sm text-destructive hover:underline">
+                        Revoke all other sessions
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="divide-y">
+            {% for session in activeSessions %}
+                <div class="flex items-center justify-between py-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium text-card-foreground">
+                            {{ session.userAgent|default('Unknown device')|slice(0, 60) }}
+                            {% if session.sessionTokenHash == currentTokenHash %}
+                                <span class="ml-2 inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">Current</span>
+                            {% endif %}
+                        </p>
+                        <p class="mt-0.5 text-xs text-muted-foreground">
+                            {{ session.ipAddress|default('Unknown IP') }} &middot;
+                            Last active {{ session.lastActiveAt|date('M j, Y g:i a') }}
+                        </p>
+                    </div>
+                    {% if session.sessionTokenHash != currentTokenHash %}
+                        <form method="post" action="{{ path('profile_session_revoke', {id: session.id}) }}" class="ml-4 shrink-0">
+                            <input type="hidden" name="_token" value="{{ csrf_token('revoke_session_' ~ session.id) }}">
+                            <button type="submit" class="text-sm text-destructive hover:underline">
+                                Revoke
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="py-4 text-center text-sm text-muted-foreground">No active sessions found.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Danger zone #}
+    <div class="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+        <h2 class="mb-2 text-base font-semibold text-destructive">Danger zone</h2>
+        <p class="mb-4 text-sm text-muted-foreground">
+            Request permanent deletion of your account and all associated data.
+            This action is irreversible.
+        </p>
+        <form method="post" action="{{ path('profile_request_erasure') }}"
+              onsubmit="return confirm('Are you absolutely sure? This will permanently delete your account and all data.')">
+            <input type="hidden" name="_token" value="{{ csrf_token('request_erasure') }}">
+            <button type="submit" class="rounded-md border border-destructive bg-background px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                Delete my account
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock main %}
