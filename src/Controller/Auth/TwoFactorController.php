@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Auth;
 
+use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface;
+use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Email\Generator\CodeGeneratorInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Exception\UnknownTwoFactorProviderException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,11 +18,6 @@ use Symfony\Component\Security\Http\SecurityRequestAttributes;
 
 class TwoFactorController extends AbstractController
 {
-    public function __construct(
-        private readonly TokenStorageInterface $tokenStorage,
-    ) {
-    }
-
     private const PROVIDER_LABELS = [
         'totp' => 'Authenticator app',
         'email' => 'Email code',
@@ -28,6 +25,15 @@ class TwoFactorController extends AbstractController
 
     /** Defines display order on the selection page and the default preference. */
     private const PROVIDER_PRIORITY = ['totp', 'email'];
+
+    private const SESSION_RESEND_KEY = '_2fa_email_last_sent';
+    private const RESEND_COOLDOWN = 60;
+
+    public function __construct(
+        private readonly TokenStorageInterface $tokenStorage,
+        private readonly CodeGeneratorInterface $codeGenerator,
+    ) {
+    }
 
     #[Route('/2fa/select-provider', name: '2fa_select_provider')]
     public function selectProvider(): Response
@@ -90,12 +96,51 @@ class TwoFactorController extends AbstractController
         $currentProvider = $token instanceof TwoFactorTokenInterface ? $token->getCurrentTwoFactorProvider() : null;
         $availableProviders = $token instanceof TwoFactorTokenInterface ? $token->getTwoFactorProviders() : [];
 
+        $resendCooldown = 0;
+        if ($currentProvider === 'email') {
+            $lastSent = $session->get(self::SESSION_RESEND_KEY);
+            if ($lastSent === null) {
+                $session->set(self::SESSION_RESEND_KEY, time());
+                $lastSent = time();
+            }
+            $resendCooldown = max(0, self::RESEND_COOLDOWN - (time() - (int) $lastSent));
+        }
+
         $template = $currentProvider === 'email' ? 'auth/2fa_email.html.twig' : 'auth/2fa.html.twig';
 
         return $this->render($template, [
             'authenticationError' => $authError instanceof AuthenticationException ? $authError->getMessageKey() : null,
             'twoFactorProvider' => $currentProvider,
             'availableTwoFactorProviders' => $availableProviders,
+            'resendCooldown' => $resendCooldown,
         ]);
+    }
+
+    #[Route('/2fa/resend-code', name: '2fa_resend_code', methods: ['POST'])]
+    public function resendCode(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('2fa_resend', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $token = $this->tokenStorage->getToken();
+        if (!$token instanceof TwoFactorTokenInterface) {
+            return $this->redirectToRoute('2fa_login');
+        }
+
+        $session = $request->getSession();
+        $lastSent = (int) ($session->get(self::SESSION_RESEND_KEY) ?? 0);
+
+        if (time() - $lastSent < self::RESEND_COOLDOWN) {
+            return $this->redirectToRoute('2fa_login', ['preferProvider' => 'email']);
+        }
+
+        $user = $token->getUser();
+        if ($user instanceof EmailTwoFactorInterface) {
+            $this->codeGenerator->generateAndSend($user);
+            $session->set(self::SESSION_RESEND_KEY, time());
+        }
+
+        return $this->redirectToRoute('2fa_login', ['preferProvider' => 'email']);
     }
 }
