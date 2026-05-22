@@ -11,7 +11,7 @@
         </p>
     </div>
 
-    {% if authenticationError %}
+    {% if authenticationError is defined and authenticationError %}
         <div class="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
             Invalid code — please try again.
         </div>
