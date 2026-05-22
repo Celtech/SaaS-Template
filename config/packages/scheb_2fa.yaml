@@ -3,3 +3,8 @@ scheb_two_factor:
     security_tokens:
         - Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken
         - Symfony\Component\Security\Http\Authenticator\Token\PostAuthenticationToken
+    totp:
+        enabled: true
+        issuer: '%env(APP_NAME)%'
+        server_name: '%env(APP_NAME)%'
+        template: auth/2fa.html.twig

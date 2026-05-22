@@ -1,0 +1,77 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Set up two-factor authentication{% endblock %}
+
+{% block main %}
+<div class="max-w-lg space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Set up two-factor authentication</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Scan the QR code with your authenticator app, then enter the 6-digit code to confirm.
+        </p>
+    </div>
+
+    {% for message in app.flashes('error') %}
+        <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
+    {% endfor %}
+
+    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-6">
+
+        {# Step 1: QR code #}
+        <div>
+            <p class="mb-3 text-sm font-medium text-card-foreground">
+                1. Scan this QR code with Google Authenticator, Authy, or any TOTP app
+            </p>
+            <div class="flex justify-center">
+                <canvas
+                    data-controller="totp-qr"
+                    data-totp-qr-uri-value="{{ totp_uri }}"
+                    class="rounded-md border p-2"
+                ></canvas>
+            </div>
+        </div>
+
+        {# Step 2: Manual key #}
+        <div>
+            <p class="mb-2 text-sm font-medium text-card-foreground">
+                2. Or enter this key manually
+            </p>
+            <div class="flex items-center gap-2 rounded-md border bg-muted px-3 py-2">
+                <code class="flex-1 font-mono text-sm tracking-widest text-foreground break-all">{{ totp_secret }}</code>
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">Time-based · SHA-1 · 6 digits · 30 seconds</p>
+        </div>
+
+        {# Step 3: Confirm #}
+        <div>
+            <p class="mb-3 text-sm font-medium text-card-foreground">
+                3. Enter the 6-digit code from your app to confirm
+            </p>
+            <form method="post" action="{{ path('profile_2fa_enable') }}" class="space-y-4">
+                <input type="hidden" name="_token" value="{{ csrf_token('2fa_enable') }}">
+                <input
+                    type="text"
+                    name="code"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    autocomplete="one-time-code"
+                    autofocus
+                    required
+                    placeholder="000000"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                        Enable two-factor authentication
+                    </button>
+                    <a href="{{ path('profile_security') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
