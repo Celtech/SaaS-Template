@@ -54,6 +54,7 @@ Default Super Admin credentials are printed to the console during `make seed`. C
 |---|---|
 | Application | https://localhost |
 | Mailpit (email catcher) | http://localhost:8025 |
+| Adminer (DB UI) | http://localhost:8080 |
 | PostgreSQL | localhost:5432 |
 | Valkey | localhost:6379 |
 
