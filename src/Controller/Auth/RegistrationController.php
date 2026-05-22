@@ -42,10 +42,11 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
+            $email = (string) $form->get('email')->getData();
+            $name = (string) $form->get('name')->getData();
             $plainPassword = $form->get('plainPassword')->getData();
 
-            $user = new User($data['email'], $data['name']);
+            $user = new User($email, $name);
             $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
 
             $token = new EmailVerificationToken($user);

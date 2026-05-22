@@ -20,6 +20,10 @@ final class SensitiveDataProcessorTest extends UnitTestCase
         $this->processor = new SensitiveDataProcessor();
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $extra
+     */
     private function makeRecord(array $context = [], array $extra = []): LogRecord
     {
         return new LogRecord(

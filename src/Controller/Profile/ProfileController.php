@@ -49,8 +49,8 @@ class ProfileController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $newEmail = $data['email'];
+            $newEmail = (string) $form->get('email')->getData();
+            $newName = (string) $form->get('name')->getData();
 
             if ($newEmail !== $user->getEmail()) {
                 $existing = $this->userRepository->findByEmail($newEmail);
@@ -63,7 +63,7 @@ class ProfileController extends AbstractController
                 $user->markEmailVerified(); // re-verify handled separately if needed
             }
 
-            $user->setName($data['name']);
+            $user->setName($newName);
             $this->em->flush();
 
             $this->addFlash('success', 'Profile updated.');
