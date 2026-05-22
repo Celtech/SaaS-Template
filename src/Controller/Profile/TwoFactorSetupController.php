@@ -7,6 +7,11 @@ namespace App\Controller\Profile;
 use App\Entity\User;
 use App\Service\Audit\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Writer\SvgWriter;
 use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -55,8 +60,18 @@ class TwoFactorSetupController extends AbstractController
         $totp->setLabel($email);
         $totp->setIssuer($this->appName);
 
+        $qrResult = new Builder(
+            writer: new SvgWriter(),
+            data: $totp->getProvisioningUri(),
+            encoding: new Encoding('UTF-8'),
+            errorCorrectionLevel: ErrorCorrectionLevel::High,
+            size: 192,
+            margin: 8,
+            roundBlockSizeMode: RoundBlockSizeMode::Margin,
+        )->build();
+
         return $this->render('profile/2fa_setup.html.twig', [
-            'totp_uri' => $totp->getProvisioningUri(),
+            'qr_code_uri' => $qrResult->getDataUri(),
             'totp_secret' => $secret,
         ]);
     }
