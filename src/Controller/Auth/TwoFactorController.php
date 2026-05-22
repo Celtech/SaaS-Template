@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Auth;
 
 use App\Entity\User;
+use App\Security\WebauthnTwoFactorProvider;
 use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Email\Generator\CodeGeneratorInterface;
@@ -34,6 +35,7 @@ class TwoFactorController extends AbstractController
     public function __construct(
         private readonly TokenStorageInterface $tokenStorage,
         private readonly CodeGeneratorInterface $codeGenerator,
+        private readonly WebauthnTwoFactorProvider $webauthnProvider,
     ) {
     }
 
@@ -115,6 +117,10 @@ class TwoFactorController extends AbstractController
 
         $tokenUser = $token instanceof TwoFactorTokenInterface ? $token->getUser() : null;
         $hasBackupCodes = $tokenUser instanceof User && $tokenUser->hasBackupCodes();
+
+        if ($currentProvider === 'webauthn' && !\is_string($session->get('_webauthn_assertion_options')) && $tokenUser !== null) {
+            $this->webauthnProvider->prepareAuthentication($tokenUser);
+        }
 
         $template = match ($currentProvider) {
             'email' => 'auth/2fa_email.html.twig',
