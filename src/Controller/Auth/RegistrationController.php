@@ -8,6 +8,7 @@ use App\Entity\EmailVerificationToken;
 use App\Entity\User;
 use App\Form\RegistrationForm;
 use App\Message\Mail\SendMailMessage;
+use App\Service\Audit\AuditLogger;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +29,7 @@ class RegistrationController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MessageBusInterface $bus,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -55,6 +57,7 @@ class RegistrationController extends AbstractController
             $this->em->flush();
 
             $this->sendVerificationEmail($user, $token);
+            $this->auditLogger->logAuth('registered', $user->getId()->toRfc4122());
 
             $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
 
@@ -100,6 +103,7 @@ class RegistrationController extends AbstractController
         $tokenEntity->markUsed();
         $this->em->flush();
 
+        $this->auditLogger->logAuth('email.verified', $user->getId()->toRfc4122());
         $this->addFlash('success', 'Your email address has been verified. You can now sign in.');
 
         return $this->redirectToRoute('auth_login');
