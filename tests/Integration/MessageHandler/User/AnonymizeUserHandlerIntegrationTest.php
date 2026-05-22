@@ -63,6 +63,9 @@ final class AnonymizeUserHandlerIntegrationTest extends FunctionalTestCase
         $persisted = $this->em->find(UserSession::class, $alreadyRevoked->getId());
         $this->assertNotNull($persisted);
         $revokedAtBeforeHandler = $persisted->getRevokedAt();
+        if ($revokedAtBeforeHandler === null) {
+            $this->fail('Pre-revoked session should have a revokedAt timestamp before the handler runs');
+        }
 
         $user = $this->em->find(\App\Entity\User::class, $user->getId());
         $this->assertNotNull($user);
