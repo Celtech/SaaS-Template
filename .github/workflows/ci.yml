@@ -164,6 +164,7 @@ jobs:
       - name: Warm dev cache for PHPStan container inspection
         env:
           APP_ENV: dev
+          APP_DEBUG: "1"
           APP_SECRET: stan-placeholder
           DATABASE_URL: postgresql://app:secret@127.0.0.1:5432/saas_template?serverVersion=17&charset=utf8
           MESSENGER_TRANSPORT_DSN: redis://127.0.0.1:6379/messages
