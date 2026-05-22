@@ -84,7 +84,7 @@ final class AnonymizeUserHandlerIntegrationTest extends FunctionalTestCase
             'Already-revoked session timestamp must not be updated by the handler'
         );
         $this->assertEquals(
-            $revokedAtBeforeHandler?->format('Y-m-d H:i:s'),
+            $revokedAtBeforeHandler->format('Y-m-d H:i:s'),
             $refreshed->getRevokedAt()?->format('Y-m-d H:i:s'),
             'Already-revoked session timestamp must not change'
         );
