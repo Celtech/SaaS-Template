@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\UserStatus;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -19,7 +18,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
 #[ORM\Index(columns: ['email'], name: 'idx_users_email')]
-#[ORM\Index(columns: ['status'], name: 'idx_users_status')]
+#[ORM\Index(columns: ['deleted_at'], name: 'idx_users_deleted_at')]
 #[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFactorInterface
 {
@@ -46,8 +45,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?DateTimeImmutable $emailVerifiedAt = null;
 
-    #[ORM\Column(type: Types::STRING, length: 20, enumType: UserStatus::class)]
-    private UserStatus $status = UserStatus::Active;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $suspendedAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $deletedAt = null;
 
     #[ORM\Column(type: Types::SMALLINT)]
     private int $failedLoginCount = 0;
@@ -177,14 +179,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return $this->emailVerifiedAt !== null;
     }
 
-    public function getStatus(): UserStatus
+    public function getSuspendedAt(): ?DateTimeImmutable
     {
-        return $this->status;
+        return $this->suspendedAt;
     }
 
-    public function setStatus(UserStatus $status): static
+    public function isSuspended(): bool
     {
-        $this->status = $status;
+        return $this->suspendedAt !== null;
+    }
+
+    public function suspend(): static
+    {
+        $this->suspendedAt = new DateTimeImmutable();
+        $this->touch();
+
+        return $this;
+    }
+
+    public function unsuspend(): static
+    {
+        $this->suspendedAt = null;
+        $this->touch();
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
+    }
+
+    public function softDelete(): static
+    {
+        $this->deletedAt = new DateTimeImmutable();
+        $this->touch();
+
+        return $this;
+    }
+
+    public function restore(): static
+    {
+        $this->deletedAt = null;
+        $this->suspendedAt = null;
         $this->touch();
 
         return $this;
@@ -192,7 +234,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     public function isActive(): bool
     {
-        return $this->status === UserStatus::Active;
+        return $this->deletedAt === null && $this->suspendedAt === null;
     }
 
     public function getFailedLoginCount(): int
