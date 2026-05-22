@@ -118,8 +118,13 @@ class TwoFactorController extends AbstractController
         $tokenUser = $token instanceof TwoFactorTokenInterface ? $token->getUser() : null;
         $hasBackupCodes = $tokenUser instanceof User && $tokenUser->hasBackupCodes();
 
-        if ($currentProvider === 'webauthn' && !\is_string($session->get('_webauthn_assertion_options')) && $tokenUser !== null) {
+        if ($currentProvider === 'webauthn' && !\is_string($session->get('_webauthn_assertion_options')) && $tokenUser !== null && $token instanceof TwoFactorTokenInterface) {
             $this->webauthnProvider->prepareAuthentication($tokenUser);
+            // Mark as prepared so scheb's onKernelResponse listener doesn't overwrite
+            // the challenge we just stored — it fires after the controller renders the
+            // template, so without this the session would contain a different challenge
+            // than what was embedded in the page HTML.
+            $token->setTwoFactorProviderPrepared('webauthn');
         }
 
         $template = match ($currentProvider) {
