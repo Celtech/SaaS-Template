@@ -9,6 +9,9 @@ CONSOLE = $(PHP) bin/console
 #  Docker
 # ──────────────────────────────────────────────
 
+install: ## Install Composer dependencies (run once after first up, or after composer.json changes)
+	$(COMPOSER) install
+
 up: ## Start all containers in the background
 	$(DOCKER_COMPOSE) up --detach
 
