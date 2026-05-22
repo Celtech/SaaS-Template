@@ -80,11 +80,16 @@ class TwoFactorController extends AbstractController
                 } catch (UnknownTwoFactorProviderException) {
                     // ignore invalid provider names
                 }
-            } elseif (\in_array('totp', $token->getTwoFactorProviders(), true)) {
-                try {
-                    $token->preferTwoFactorProvider('totp');
-                } catch (UnknownTwoFactorProviderException) {
-                    // ignore
+            } else {
+                foreach (self::PROVIDER_PRIORITY as $preferred) {
+                    if (\in_array($preferred, $token->getTwoFactorProviders(), true)) {
+                        try {
+                            $token->preferTwoFactorProvider($preferred);
+                        } catch (UnknownTwoFactorProviderException) {
+                            // ignore
+                        }
+                        break;
+                    }
                 }
             }
         }
@@ -111,7 +116,11 @@ class TwoFactorController extends AbstractController
         $tokenUser = $token instanceof TwoFactorTokenInterface ? $token->getUser() : null;
         $hasBackupCodes = $tokenUser instanceof User && $tokenUser->hasBackupCodes();
 
-        $template = $currentProvider === 'email' ? 'auth/2fa_email.html.twig' : 'auth/2fa.html.twig';
+        $template = match ($currentProvider) {
+            'email' => 'auth/2fa_email.html.twig',
+            'webauthn' => 'auth/2fa_webauthn.html.twig',
+            default => 'auth/2fa.html.twig',
+        };
 
         return $this->render($template, [
             'authenticationError' => $authError instanceof AuthenticationException ? $authError->getMessageKey() : null,
@@ -119,6 +128,7 @@ class TwoFactorController extends AbstractController
             'availableTwoFactorProviders' => $availableProviders,
             'resendCooldown' => $resendCooldown,
             'hasBackupCodes' => $hasBackupCodes,
+            'webauthnOptionsJson' => $session->get('_webauthn_assertion_options', '{}'),
         ]);
     }
 
