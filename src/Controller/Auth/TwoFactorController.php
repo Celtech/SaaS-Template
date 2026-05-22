@@ -26,6 +26,9 @@ class TwoFactorController extends AbstractController
         'email' => 'Email code',
     ];
 
+    /** Defines display order on the selection page and the default preference. */
+    private const PROVIDER_PRIORITY = ['totp', 'email'];
+
     #[Route('/2fa/select-provider', name: '2fa_select_provider')]
     public function selectProvider(): Response
     {
@@ -42,6 +45,13 @@ class TwoFactorController extends AbstractController
             ],
             $token->getTwoFactorProviders(),
         );
+
+        usort($providers, static function (array $a, array $b): int {
+            $posA = array_search($a['key'], self::PROVIDER_PRIORITY, true);
+            $posB = array_search($b['key'], self::PROVIDER_PRIORITY, true);
+
+            return ($posA === false ? \PHP_INT_MAX : $posA) <=> ($posB === false ? \PHP_INT_MAX : $posB);
+        });
 
         return $this->render('auth/2fa_select_provider.html.twig', [
             'currentProvider' => $token->getCurrentTwoFactorProvider(),
@@ -61,6 +71,12 @@ class TwoFactorController extends AbstractController
                     $token->preferTwoFactorProvider($prefer);
                 } catch (UnknownTwoFactorProviderException) {
                     // ignore invalid provider names
+                }
+            } elseif (\in_array('totp', $token->getTwoFactorProviders(), true)) {
+                try {
+                    $token->preferTwoFactorProvider('totp');
+                } catch (UnknownTwoFactorProviderException) {
+                    // ignore
                 }
             }
         }
