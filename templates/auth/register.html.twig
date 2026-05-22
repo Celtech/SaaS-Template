@@ -26,12 +26,12 @@
         {{ forms.field(form.plainPassword.second, {'autocomplete': 'new-password'}) }}
 
         {# Checkbox with manual error rendering since layout differs #}
-        <div class="flex items-start gap-2">
-            {{ form_widget(form.agreeTerms, {'attr': {'class': 'mt-0.5 rounded border-input'}}) }}
-            <div>
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                {{ form_widget(form.agreeTerms, {'attr': {'class': 'rounded border-input'}}) }}
                 {{ form_label(form.agreeTerms, null, {'label_attr': {'class': 'text-sm ' ~ (form.agreeTerms.vars.errors|length > 0 ? 'text-destructive' : 'text-muted-foreground')}}) }}
-                {{ form_errors(form.agreeTerms) }}
             </div>
+            {{ form_errors(form.agreeTerms) }}
         </div>
 
         <button
