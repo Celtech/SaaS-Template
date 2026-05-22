@@ -1,4 +1,5 @@
 {% extends 'layouts/app.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
 
 {% block title %}Profile{% endblock %}
 
@@ -21,23 +22,16 @@
     <div class="rounded-xl border bg-card p-6 shadow-sm">
         {{ form_start(form, {'action': path('profile_update'), 'method': 'post', 'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
 
-            <div class="space-y-1">
-                {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-                {{ form_widget(form.name, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
-                {{ form_errors(form.name) }}
-            </div>
-
-            <div class="space-y-1">
-                {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-                {{ form_widget(form.email, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+            {{ forms.field(form.name) }}
+            <div>
+                {{ forms.field(form.email) }}
                 {% if not user.emailVerified %}
-                    <p class="text-xs text-warning">Email not yet verified.</p>
+                    <p class="mt-1 text-xs text-warning">Email not yet verified.</p>
                 {% endif %}
-                {{ form_errors(form.email) }}
             </div>
 
             <div class="flex justify-end">
-                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                     Save changes
                 </button>
             </div>

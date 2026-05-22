@@ -1,4 +1,5 @@
 {% extends 'layouts/auth.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
 
 {% block title %}Create account{% endblock %}
 
@@ -19,30 +20,12 @@
             </div>
         {% endif %}
 
-        <div class="space-y-1">
-            {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-            {{ form_widget(form.name, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'name'}}) }}
-            {{ form_errors(form.name) }}
-        </div>
+        {{ forms.field(form.name, {'autocomplete': 'name'}) }}
+        {{ forms.field(form.email, {'autocomplete': 'email'}) }}
+        {{ forms.field(form.plainPassword.first, {'autocomplete': 'new-password'}) }}
+        {{ forms.field(form.plainPassword.second, {'autocomplete': 'new-password'}) }}
 
-        <div class="space-y-1">
-            {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-            {{ form_widget(form.email, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'email'}}) }}
-            {{ form_errors(form.email) }}
-        </div>
-
-        <div class="space-y-1">
-            {{ form_label(form.plainPassword.first, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-            {{ form_widget(form.plainPassword.first, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
-            {{ form_errors(form.plainPassword.first) }}
-        </div>
-
-        <div class="space-y-1">
-            {{ form_label(form.plainPassword.second, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-            {{ form_widget(form.plainPassword.second, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
-            {{ form_errors(form.plainPassword.second) }}
-        </div>
-
+        {# Checkbox with manual error rendering since layout differs #}
         <div class="flex items-start gap-2">
             {{ form_widget(form.agreeTerms, {'attr': {'class': 'mt-0.5 rounded border-input'}}) }}
             <div>
