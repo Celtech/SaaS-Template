@@ -29,7 +29,7 @@
         <div class="flex items-start gap-2">
             {{ form_widget(form.agreeTerms, {'attr': {'class': 'mt-0.5 rounded border-input'}}) }}
             <div>
-                {{ form_label(form.agreeTerms, null, {'label_attr': {'class': 'text-sm text-muted-foreground'}}) }}
+                {{ form_label(form.agreeTerms, null, {'label_attr': {'class': 'text-sm ' ~ (form.agreeTerms.vars.errors|length > 0 ? 'text-destructive' : 'text-muted-foreground')}}) }}
                 {{ form_errors(form.agreeTerms) }}
             </div>
         </div>
