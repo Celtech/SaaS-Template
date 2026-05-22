@@ -12,6 +12,7 @@ use App\Service\Audit\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 
 #[AsMessageHandler]
 final class AnonymizeUserHandler
@@ -54,7 +55,7 @@ final class AnonymizeUserHandler
             $this->em->flush();
 
             $this->auditLogger->logSecurityEvent('user.anonymized', $userId);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $request->markFailed(['error' => $e->getMessage()]);
             $this->em->flush();
 

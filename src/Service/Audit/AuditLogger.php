@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Audit;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -103,7 +104,7 @@ class AuditLogger
             'ip_address' => $request?->getClientIp(),
             'user_agent' => $request?->headers->get('User-Agent'),
             'impersonation_session_id' => $impersonationSessionId,
-            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s.u'),
+            'created_at' => new DateTimeImmutable()->format('Y-m-d H:i:s.u'),
         ]);
     }
 }

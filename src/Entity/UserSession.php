@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\UserSessionRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -34,13 +35,13 @@ class UserSession
     private ?string $userAgent = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $lastActiveAt;
+    private DateTimeImmutable $lastActiveAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $revokedAt = null;
+    private ?DateTimeImmutable $revokedAt = null;
 
     public function __construct(
         User $user,
@@ -53,8 +54,8 @@ class UserSession
         $this->sessionTokenHash = $sessionTokenHash;
         $this->ipAddress = $ipAddress;
         $this->userAgent = $userAgent;
-        $this->createdAt = new \DateTimeImmutable();
-        $this->lastActiveAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->lastActiveAt = new DateTimeImmutable();
     }
 
     public function getId(): Uuid
@@ -82,31 +83,31 @@ class UserSession
         return $this->userAgent;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getLastActiveAt(): \DateTimeImmutable
+    public function getLastActiveAt(): DateTimeImmutable
     {
         return $this->lastActiveAt;
     }
 
     public function touch(): static
     {
-        $this->lastActiveAt = new \DateTimeImmutable();
+        $this->lastActiveAt = new DateTimeImmutable();
 
         return $this;
     }
 
-    public function getRevokedAt(): ?\DateTimeImmutable
+    public function getRevokedAt(): ?DateTimeImmutable
     {
         return $this->revokedAt;
     }
 
     public function revoke(): static
     {
-        $this->revokedAt = new \DateTimeImmutable();
+        $this->revokedAt = new DateTimeImmutable();
 
         return $this;
     }

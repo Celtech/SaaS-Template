@@ -55,7 +55,7 @@ final class SensitiveDataProcessor
         foreach ($data as $key => $value) {
             if ($this->isSensitiveKey((string) $key)) {
                 $data[$key] = '[REDACTED]';
-            } elseif (is_array($value)) {
+            } elseif (\is_array($value)) {
                 $data[$key] = $this->scrub($value);
             }
         }

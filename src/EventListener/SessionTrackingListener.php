@@ -7,6 +7,7 @@ namespace App\EventListener;
 use App\Entity\User;
 use App\Entity\UserSession;
 use App\Repository\UserSessionRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -78,7 +79,7 @@ class SessionTrackingListener
             return;
         }
 
-        $secondsSinceTouched = (new \DateTimeImmutable())->getTimestamp()
+        $secondsSinceTouched = new DateTimeImmutable()->getTimestamp()
             - $userSession->getLastActiveAt()->getTimestamp();
 
         if ($secondsSinceTouched >= self::TOUCH_INTERVAL_SECONDS) {

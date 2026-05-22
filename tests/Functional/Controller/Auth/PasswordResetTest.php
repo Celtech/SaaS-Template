@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 final class PasswordResetTest extends FunctionalTestCase
 {
     #[Test]
-    public function password_reset_auto_verifies_unverified_user(): void
+    public function passwordResetAutoVerifiesUnverifiedUser(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('unverified-reset@example.com');
@@ -36,7 +36,7 @@ final class PasswordResetTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function password_reset_does_not_re_verify_already_verified_user(): void
+    public function passwordResetDoesNotReVerifyAlreadyVerifiedUser(): void
     {
         $client = $this->client;
         $user = $this->createVerifiedUser('already-verified@example.com');
@@ -66,7 +66,7 @@ final class PasswordResetTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function password_reset_with_invalid_token_redirects_to_forgot_password(): void
+    public function passwordResetWithInvalidTokenRedirectsToForgotPassword(): void
     {
         $client = $this->client;
 
@@ -81,7 +81,7 @@ final class PasswordResetTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function password_reset_with_used_token_fails(): void
+    public function passwordResetWithUsedTokenFails(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('usedtoken-reset@example.com');
@@ -106,7 +106,7 @@ final class PasswordResetTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function user_can_login_after_resetting_password_on_unverified_account(): void
+    public function userCanLoginAfterResettingPasswordOnUnverifiedAccount(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('fullflow@example.com');

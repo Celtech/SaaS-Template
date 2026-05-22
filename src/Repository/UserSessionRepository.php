@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\User;
 use App\Entity\UserSession;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -44,7 +45,7 @@ class UserSessionRepository extends ServiceEntityRepository
             ->where('s.user = :user')
             ->andWhere('s.revokedAt IS NULL')
             ->setParameter('user', $user)
-            ->setParameter('now', new \DateTimeImmutable());
+            ->setParameter('now', new DateTimeImmutable());
 
         if ($exceptTokenHash !== null) {
             $qb->andWhere('s.sessionTokenHash != :except')

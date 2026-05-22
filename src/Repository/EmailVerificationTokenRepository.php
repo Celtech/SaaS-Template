@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\EmailVerificationToken;
 use App\Entity\User;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -26,7 +27,7 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->andWhere('t.usedAt IS NULL')
             ->andWhere('t.expiresAt > :now')
             ->setParameter('token', $token)
-            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('now', new DateTimeImmutable())
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -40,7 +41,7 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->orderBy('t.createdAt', 'DESC')
             ->setMaxResults(1)
             ->setParameter('user', $user)
-            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('now', new DateTimeImmutable())
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -53,7 +54,7 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->where('t.user = :user')
             ->andWhere('t.usedAt IS NULL')
             ->setParameter('user', $user)
-            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('now', new DateTimeImmutable())
             ->getQuery()
             ->execute();
     }

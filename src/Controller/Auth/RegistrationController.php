@@ -8,6 +8,7 @@ use App\Entity\EmailVerificationToken;
 use App\Entity\User;
 use App\Form\RegistrationForm;
 use App\Message\Mail\SendMailMessage;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -112,7 +113,7 @@ class RegistrationController extends AbstractController
 
         $email = strtolower(trim($request->getPayload()->getString('email')));
         $redirectTo = $request->getPayload()->getString('redirect_to', 'auth_login');
-        if (!in_array($redirectTo, ['auth_login', 'auth_verify_email_notice'], true)) {
+        if (!\in_array($redirectTo, ['auth_login', 'auth_verify_email_notice'], true)) {
             $redirectTo = 'auth_login';
         }
 
@@ -123,11 +124,11 @@ class RegistrationController extends AbstractController
             $latest = $tokenRepo->findLatestActiveForUser($user);
 
             if ($latest !== null) {
-                $elapsed = (new \DateTimeImmutable())->getTimestamp() - $latest->getCreatedAt()->getTimestamp();
+                $elapsed = new DateTimeImmutable()->getTimestamp() - $latest->getCreatedAt()->getTimestamp();
                 $remaining = self::RESEND_COOLDOWN_SECONDS - $elapsed;
 
                 if ($remaining > 0) {
-                    $this->addFlash('warning', sprintf(
+                    $this->addFlash('warning', \sprintf(
                         'Please wait %d more second%s before requesting another verification email.',
                         $remaining,
                         $remaining === 1 ? '' : 's'

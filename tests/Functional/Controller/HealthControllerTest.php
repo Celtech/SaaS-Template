@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class HealthControllerTest extends FunctionalTestCase
 {
     #[Test]
-    public function liveness_endpoint_returns_200(): void
+    public function livenessEndpointReturns200(): void
     {
         $this->client->request('GET', '/health');
 
@@ -23,7 +23,7 @@ final class HealthControllerTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function liveness_endpoint_returns_json(): void
+    public function livenessEndpointReturnsJson(): void
     {
         $this->client->request('GET', '/health');
 
@@ -31,7 +31,7 @@ final class HealthControllerTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function readiness_endpoint_returns_200_when_healthy(): void
+    public function readinessEndpointReturns200WhenHealthy(): void
     {
         $this->client->request('GET', '/health/ready');
 
@@ -45,7 +45,7 @@ final class HealthControllerTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function readiness_endpoint_includes_all_check_keys(): void
+    public function readinessEndpointIncludesAllCheckKeys(): void
     {
         $this->client->request('GET', '/health/ready');
 

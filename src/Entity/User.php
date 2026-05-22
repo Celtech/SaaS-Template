@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\UserStatus;
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfiguration;
@@ -43,7 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     private ?string $avatarUrl = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $emailVerifiedAt = null;
+    private ?DateTimeImmutable $emailVerifiedAt = null;
 
     #[ORM\Column(type: Types::STRING, length: 20, enumType: UserStatus::class)]
     private UserStatus $status = UserStatus::Active;
@@ -52,7 +53,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     private int $failedLoginCount = 0;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $lockedUntil = null;
+    private ?DateTimeImmutable $lockedUntil = null;
 
     #[ORM\Column(type: Types::STRING, nullable: true)]
     private ?string $totpSecret = null;
@@ -61,18 +62,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     private bool $totpEnabled = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
     public function __construct(string $email, string $name)
     {
         $this->id = Uuid::v7();
         $this->email = strtolower(trim($email));
         $this->name = $name;
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function getId(): Uuid
@@ -155,14 +156,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return $this;
     }
 
-    public function getEmailVerifiedAt(): ?\DateTimeImmutable
+    public function getEmailVerifiedAt(): ?DateTimeImmutable
     {
         return $this->emailVerifiedAt;
     }
 
     public function markEmailVerified(): static
     {
-        $this->emailVerifiedAt = new \DateTimeImmutable();
+        $this->emailVerifiedAt = new DateTimeImmutable();
         $this->touch();
 
         return $this;
@@ -212,12 +213,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return $this;
     }
 
-    public function getLockedUntil(): ?\DateTimeImmutable
+    public function getLockedUntil(): ?DateTimeImmutable
     {
         return $this->lockedUntil;
     }
 
-    public function lockUntil(\DateTimeImmutable $until): static
+    public function lockUntil(DateTimeImmutable $until): static
     {
         $this->lockedUntil = $until;
         $this->touch();
@@ -236,7 +237,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     public function isLocked(): bool
     {
-        return $this->lockedUntil !== null && $this->lockedUntil > new \DateTimeImmutable();
+        return $this->lockedUntil !== null && $this->lockedUntil > new DateTimeImmutable();
     }
 
     public function isTotpAuthenticationEnabled(): bool
@@ -286,12 +287,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return $this->totpEnabled;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -302,6 +303,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     private function touch(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 }

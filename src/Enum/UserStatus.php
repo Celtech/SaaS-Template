@@ -12,7 +12,7 @@ enum UserStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Active => 'Active',
             self::Suspended => 'Suspended',
             self::Deleted => 'Deleted',

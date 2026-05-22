@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Enum\DataErasureStatus;
 use App\Repository\DataErasureRequestRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -35,17 +36,17 @@ class DataErasureRequest
     private ?array $errorContext = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $requestedAt;
+    private DateTimeImmutable $requestedAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $processedAt = null;
+    private ?DateTimeImmutable $processedAt = null;
 
     public function __construct(User $user, ?string $reason = null)
     {
         $this->id = Uuid::v7();
         $this->user = $user;
         $this->reason = $reason;
-        $this->requestedAt = new \DateTimeImmutable();
+        $this->requestedAt = new DateTimeImmutable();
     }
 
     public function getId(): Uuid
@@ -73,7 +74,7 @@ class DataErasureRequest
     public function markCompleted(): static
     {
         $this->status = DataErasureStatus::Completed;
-        $this->processedAt = new \DateTimeImmutable();
+        $this->processedAt = new DateTimeImmutable();
 
         return $this;
     }
@@ -83,7 +84,7 @@ class DataErasureRequest
     {
         $this->status = DataErasureStatus::Failed;
         $this->errorContext = $context;
-        $this->processedAt = new \DateTimeImmutable();
+        $this->processedAt = new DateTimeImmutable();
 
         return $this;
     }
@@ -99,12 +100,12 @@ class DataErasureRequest
         return $this->errorContext;
     }
 
-    public function getRequestedAt(): \DateTimeImmutable
+    public function getRequestedAt(): DateTimeImmutable
     {
         return $this->requestedAt;
     }
 
-    public function getProcessedAt(): ?\DateTimeImmutable
+    public function getProcessedAt(): ?DateTimeImmutable
     {
         return $this->processedAt;
     }

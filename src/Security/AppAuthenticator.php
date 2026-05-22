@@ -49,9 +49,7 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
                 }
 
                 if ($user->isLocked()) {
-                    throw new CustomUserMessageAuthenticationException(
-                        'Your account has been temporarily locked due to too many failed login attempts.'
-                    );
+                    throw new CustomUserMessageAuthenticationException('Your account has been temporarily locked due to too many failed login attempts.');
                 }
 
                 if (!$user->isEmailVerified()) {
