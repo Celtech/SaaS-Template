@@ -14,3 +14,6 @@ scheb_two_factor:
         sender_name: '%env(MAILER_FROM_NAME)%'
         digits: 6
         template: auth/2fa_email.html.twig
+    backup_codes:
+        enabled: true
+        manager: App\Security\BackupCodeManager

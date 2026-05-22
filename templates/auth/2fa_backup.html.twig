@@ -1,0 +1,53 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Backup code{% endblock %}
+
+{% block auth_content %}
+<div class="rounded-xl border bg-card p-8 shadow-sm">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-semibold text-card-foreground">Use a backup code</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Enter one of your saved backup codes
+        </p>
+    </div>
+
+    {% if authenticationError is defined and authenticationError %}
+        <div class="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            That backup code is invalid or has already been used.
+        </div>
+    {% endif %}
+
+    <form method="post" action="{{ path('2fa_login_check') }}" class="space-y-4">
+
+        <div class="space-y-1">
+            <label for="_auth_code" class="block text-sm font-medium text-foreground">Backup code</label>
+            <input
+                type="text"
+                id="_auth_code"
+                name="_auth_code"
+                autocomplete="off"
+                autofocus
+                required
+                placeholder="XXXXX-XXXXX"
+                class="w-full rounded-md border border-input bg-background px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+        </div>
+
+        <button
+            type="submit"
+            class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+            Verify
+        </button>
+
+    </form>
+
+    <p class="mt-4 text-center text-sm text-muted-foreground">
+        <a href="{{ path('2fa_login') }}" class="font-medium text-primary hover:underline">Back to verification</a>
+    </p>
+
+    <p class="mt-2 text-center text-sm text-muted-foreground">
+        <a href="{{ path('auth_logout') }}" class="font-medium text-primary hover:underline">Sign in as different user</a>
+    </p>
+</div>
+{% endblock %}

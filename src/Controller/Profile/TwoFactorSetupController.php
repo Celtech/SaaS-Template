@@ -101,14 +101,14 @@ class TwoFactorSetupController extends AbstractController
         }
 
         $user->enableTotp($secret);
+        $plaintextCodes = $user->generateBackupCodes();
         $this->em->flush();
 
         $request->getSession()->remove(self::SESSION_KEY);
+        $request->getSession()->set('_2fa_backup_codes_display', $plaintextCodes);
         $this->auditLogger->logSecurityEvent('2fa.enabled', $user->getId()->toRfc4122());
 
-        $this->addFlash('success', 'Two-factor authentication has been enabled.');
-
-        return $this->redirectToRoute('profile_security');
+        return $this->redirectToRoute('profile_2fa_backup_codes');
     }
 
     #[Route('/disable', name: 'profile_2fa_disable', methods: ['POST'])]
@@ -183,5 +183,37 @@ class TwoFactorSetupController extends AbstractController
         $this->addFlash('success', 'Email code two-factor authentication has been disabled.');
 
         return $this->redirectToRoute('profile_security');
+    }
+
+    #[Route('/backup-codes', name: 'profile_2fa_backup_codes', methods: ['GET'])]
+    public function backupCodes(Request $request): Response
+    {
+        $session = $request->getSession();
+        $codes = $session->get('_2fa_backup_codes_display');
+        $session->remove('_2fa_backup_codes_display');
+
+        return $this->render('profile/2fa_backup_codes.html.twig', [
+            'codes' => \is_array($codes) ? $codes : [],
+        ]);
+    }
+
+    #[Route('/backup-codes/regenerate', name: 'profile_2fa_backup_regenerate', methods: ['POST'])]
+    public function regenerateBackupCodes(Request $request, #[CurrentUser] User $user): Response
+    {
+        if (!$this->isCsrfTokenValid('2fa_backup_regenerate', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$user->isTotpAuthenticationEnabled()) {
+            return $this->redirectToRoute('profile_security');
+        }
+
+        $plaintextCodes = $user->generateBackupCodes();
+        $this->em->flush();
+
+        $request->getSession()->set('_2fa_backup_codes_display', $plaintextCodes);
+        $this->auditLogger->logSecurityEvent('2fa.backup_codes.regenerated', $user->getId()->toRfc4122());
+
+        return $this->redirectToRoute('profile_2fa_backup_codes');
     }
 }

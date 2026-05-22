@@ -8,6 +8,7 @@ use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Scheb\TwoFactorBundle\Model\BackupCodeInterface;
 use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfiguration;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfigurationInterface;
@@ -21,7 +22,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(columns: ['email'], name: 'idx_users_email')]
 #[ORM\Index(columns: ['deleted_at'], name: 'idx_users_deleted_at')]
 #[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
-class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwoFactorInterface, EmailTwoFactorInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwoFactorInterface, EmailTwoFactorInterface, BackupCodeInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
@@ -69,6 +70,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwo
 
     #[ORM\Column(type: Types::STRING, length: 6, nullable: true)]
     private ?string $emailAuthCode = null;
+
+    /** @var list<string> SHA-256 hashes of remaining backup codes */
+    #[ORM\Column(type: Types::JSON, options: ['default' => '[]'])]
+    private array $backupCodes = [];
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
@@ -374,6 +379,56 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwo
         $this->touch();
 
         return $this;
+    }
+
+    /**
+     * Generate 10 fresh backup codes, store their hashes, and return the plaintext codes.
+     * Each plaintext code is 10 uppercase hex characters (e.g. "A1B2C3D4E5").
+     *
+     * @return list<string>
+     */
+    public function generateBackupCodes(): array
+    {
+        $plaintext = [];
+        $hashed = [];
+
+        for ($i = 0; $i < 10; ++$i) {
+            $code = strtoupper(bin2hex(random_bytes(5)));
+            $plaintext[] = $code;
+            $hashed[] = hash('sha256', $code);
+        }
+
+        $this->backupCodes = $hashed;
+        $this->touch();
+
+        return $plaintext;
+    }
+
+    public function isBackupCode(string $code): bool
+    {
+        return \in_array(hash('sha256', self::normalizeBackupCode($code)), $this->backupCodes, true);
+    }
+
+    public function invalidateBackupCode(string $code): void
+    {
+        $hash = hash('sha256', self::normalizeBackupCode($code));
+        $this->backupCodes = array_values(array_filter($this->backupCodes, static fn (string $h) => $h !== $hash));
+        $this->touch();
+    }
+
+    public function getBackupCodeCount(): int
+    {
+        return \count($this->backupCodes);
+    }
+
+    public function hasBackupCodes(): bool
+    {
+        return $this->backupCodes !== [];
+    }
+
+    private static function normalizeBackupCode(string $code): string
+    {
+        return strtoupper(str_replace(['-', ' '], '', $code));
     }
 
     public function getCreatedAt(): DateTimeImmutable

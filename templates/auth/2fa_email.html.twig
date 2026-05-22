@@ -92,6 +92,14 @@
         </div>
     {% endif %}
 
+    {% if hasBackupCodes is defined and hasBackupCodes %}
+        <div class="mt-2 text-center text-sm text-muted-foreground">
+            <a href="{{ path('2fa_backup_code') }}" class="font-medium text-primary hover:underline">
+                Use a backup code
+            </a>
+        </div>
+    {% endif %}
+
     <p class="mt-4 text-center text-sm text-muted-foreground">
         <a href="{{ path('auth_logout') }}" class="font-medium text-primary hover:underline">Sign in as different user</a>
     </p>
