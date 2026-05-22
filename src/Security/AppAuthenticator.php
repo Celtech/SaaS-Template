@@ -29,6 +29,7 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
 
     public const LOGIN_ROUTE = 'auth_login';
     public const MSG_EMAIL_NOT_VERIFIED = 'email_not_verified';
+    public const MSG_ACCOUNT_INACTIVE = 'account_inactive';
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -48,6 +49,10 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
 
                 if ($user === null) {
                     throw new CustomUserMessageAuthenticationException('Invalid credentials.');
+                }
+
+                if (!$user->isActive()) {
+                    throw new CustomUserMessageAuthenticationException(self::MSG_ACCOUNT_INACTIVE);
                 }
 
                 if ($user->isLocked()) {
@@ -92,6 +97,12 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
             $this->auditLogger->logAuth('login.failure', null, 'user', [
                 'email' => $email,
                 'reason' => 'email_not_verified',
+            ]);
+        } elseif ($exception instanceof CustomUserMessageAuthenticationException
+            && $exception->getMessageKey() === self::MSG_ACCOUNT_INACTIVE) {
+            $this->auditLogger->logAuth('login.failure', null, 'user', [
+                'email' => $email,
+                'reason' => 'account_inactive',
             ]);
         } else {
             // Credential failures are counted and logged by AccountLockoutService

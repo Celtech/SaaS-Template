@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\MessageHandler\User;
 
 use App\Entity\DataErasureRequest;
-use App\Enum\UserStatus;
 use App\Message\User\AnonymizeUserMessage;
 use App\Repository\UserSessionRepository;
 use App\Service\Audit\AuditLogger;
@@ -48,7 +47,7 @@ final class AnonymizeUserHandler
             $user->setEmail($placeholder . '@anonymized.invalid');
             $user->setName('Deleted User');
             $user->setAvatarUrl(null);
-            $user->setStatus(UserStatus::Deleted);
+            $user->softDelete();
             $user->disableTotp();
 
             $request->markCompleted();
