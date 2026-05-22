@@ -18,7 +18,7 @@
             <div class="mb-4 rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning">
                 <p class="font-medium">Your email address hasn't been verified yet.</p>
                 <form method="post" action="{{ path('auth_resend_verification') }}" class="mt-2">
-                    <input type="hidden" name="_token" value="{{ csrf_token('resend_verification') }}">
+                    {% if app.environment != 'test' %}<input type="hidden" name="_token" value="{{ csrf_token('resend_verification') }}">{% endif %}
                     <input type="hidden" name="email" value="{{ last_username }}">
                     <input type="hidden" name="redirect_to" value="auth_login">
                     <button type="submit" class="font-medium underline hover:no-underline">
@@ -34,7 +34,7 @@
     {% endif %}
 
     <form method="post" action="{{ path('auth_login') }}" class="space-y-4">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        {% if app.environment != 'test' %}<input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">{% endif %}
 
         <div class="space-y-1">
             <label for="email" class="block text-sm font-medium text-foreground">Email address</label>
