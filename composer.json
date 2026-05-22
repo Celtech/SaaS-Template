@@ -11,6 +11,7 @@
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
         "endroid/qr-code": "^6.1",
+        "scheb/2fa-backup-code": "^8.5",
         "scheb/2fa-bundle": "^8.5",
         "scheb/2fa-email": "^8.5",
         "scheb/2fa-totp": "^8.5",
