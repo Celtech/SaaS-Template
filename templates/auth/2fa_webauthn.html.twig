@@ -1,0 +1,132 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Security key verification{% endblock %}
+
+{% block auth_content %}
+<div class="rounded-xl border bg-card p-8 shadow-sm">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-semibold text-card-foreground">Security key</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Insert your security key or use your device biometrics
+        </p>
+    </div>
+
+    {% if authenticationError is defined and authenticationError %}
+        <div class="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Verification failed. Please try your security key again.
+        </div>
+    {% endif %}
+
+    <form method="post" action="{{ path('2fa_login_check') }}" id="webauthn-form" class="space-y-4">
+        <input type="hidden" name="_auth_code" id="_auth_code">
+
+        <div id="webauthn-status" class="rounded-lg border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+            <div id="status-waiting" class="space-y-3">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <svg class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                </div>
+                <p>Waiting for your security key…</p>
+            </div>
+            <div id="status-error" class="hidden space-y-3">
+                <p class="text-destructive">Could not read security key. <button type="button" id="retry-btn" class="font-medium text-primary hover:underline">Try again</button></p>
+            </div>
+        </div>
+
+        <button
+            type="button"
+            id="use-key-btn"
+            class="hidden w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+            Use security key
+        </button>
+    </form>
+
+    {% if availableTwoFactorProviders is defined and availableTwoFactorProviders|length > 1 %}
+        <div class="mt-4 text-center text-sm text-muted-foreground">
+            <a href="{{ path('2fa_select_provider') }}" class="font-medium text-primary hover:underline">
+                Verify another way
+            </a>
+        </div>
+    {% endif %}
+
+    {% if hasBackupCodes is defined and hasBackupCodes %}
+        <div class="mt-2 text-center text-sm text-muted-foreground">
+            <a href="{{ path('2fa_backup_code') }}" class="font-medium text-primary hover:underline">
+                Use a backup code
+            </a>
+        </div>
+    {% endif %}
+
+    <p class="mt-4 text-center text-sm text-muted-foreground">
+        <a href="{{ path('auth_logout') }}" class="font-medium text-primary hover:underline">Sign in as different user</a>
+    </p>
+</div>
+
+<script>
+(function () {
+    var optionsJson = {{ webauthnOptionsJson|raw }};
+
+    function b64urlDecode(str) {
+        var base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+        var padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+        return Uint8Array.from(atob(padded), function (c) { return c.charCodeAt(0); }).buffer;
+    }
+
+    function b64urlEncode(buffer) {
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    function showError() {
+        document.getElementById('status-waiting').classList.add('hidden');
+        document.getElementById('status-error').classList.remove('hidden');
+    }
+
+    async function authenticate() {
+        document.getElementById('status-waiting').classList.remove('hidden');
+        document.getElementById('status-error').classList.add('hidden');
+
+        var options = JSON.parse(JSON.stringify(optionsJson));
+        options.challenge = b64urlDecode(options.challenge);
+        if (options.allowCredentials) {
+            options.allowCredentials = options.allowCredentials.map(function (c) {
+                return Object.assign({}, c, { id: b64urlDecode(c.id) });
+            });
+        }
+
+        try {
+            var assertion = await navigator.credentials.get({ publicKey: options });
+            var response = {
+                id: assertion.id,
+                rawId: b64urlEncode(assertion.rawId),
+                type: assertion.type,
+                response: {
+                    clientDataJSON: b64urlEncode(assertion.response.clientDataJSON),
+                    authenticatorData: b64urlEncode(assertion.response.authenticatorData),
+                    signature: b64urlEncode(assertion.response.signature),
+                    userHandle: assertion.response.userHandle ? b64urlEncode(assertion.response.userHandle) : null
+                }
+            };
+            document.getElementById('_auth_code').value = JSON.stringify(response);
+            document.getElementById('webauthn-form').submit();
+        } catch (err) {
+            showError();
+        }
+    }
+
+    document.getElementById('retry-btn').addEventListener('click', authenticate);
+
+    if (window.PublicKeyCredential) {
+        authenticate();
+    } else {
+        document.getElementById('status-waiting').classList.add('hidden');
+        document.getElementById('status-error').classList.remove('hidden');
+        document.getElementById('status-error').querySelector('p').textContent =
+            'Your browser does not support security keys. Try another sign-in method.';
+    }
+})();
+</script>
+{% endblock %}

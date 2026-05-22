@@ -51,6 +51,48 @@
         {% endfor %}
 
         <div class="divide-y">
+            {# Security keys (WebAuthn) #}
+            <div class="py-4 first:pt-0">
+                <div class="mb-3 flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-medium text-card-foreground">Security keys</p>
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                {% if webauthnCredentials|length > 0 %}bg-success/10 text-success{% else %}bg-muted text-muted-foreground{% endif %}">
+                                {{ webauthnCredentials|length }} registered
+                            </span>
+                        </div>
+                        <p class="mt-0.5 text-xs text-muted-foreground">Hardware keys (YubiKey), Touch ID, Face ID, or other FIDO2 authenticators.</p>
+                    </div>
+                    <div class="shrink-0">
+                        <a href="{{ path('profile_webauthn_register') }}" class="inline-block rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                            Add key
+                        </a>
+                    </div>
+                </div>
+                {% if webauthnCredentials|length > 0 %}
+                    <div class="divide-y rounded-lg border bg-muted/30">
+                        {% for credential in webauthnCredentials %}
+                            <div class="flex items-center justify-between gap-4 px-4 py-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-medium text-card-foreground">{{ credential.name }}</p>
+                                    <p class="text-xs text-muted-foreground">
+                                        Added {{ credential.createdAt|date('M j, Y') }}
+                                        {% if credential.lastUsedAt %}
+                                            &middot; Last used {{ credential.lastUsedAt|date('M j, Y') }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <form method="post" action="{{ path('profile_webauthn_remove', {id: credential.id}) }}" class="shrink-0">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('webauthn_remove_' ~ credential.id) }}">
+                                    <button type="submit" class="text-sm text-destructive hover:underline">Remove</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
             {# Authenticator app (TOTP) #}
             <div class="flex items-start justify-between gap-4 py-4 first:pt-0">
                 <div class="min-w-0 flex-1">

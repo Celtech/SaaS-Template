@@ -10,6 +10,7 @@ use App\Entity\UserSession;
 use App\Form\ChangePasswordForm;
 use App\Message\User\AnonymizeUserMessage;
 use App\Repository\UserSessionRepository;
+use App\Repository\WebauthnCredentialRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,6 +29,7 @@ class SecurityController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UserSessionRepository $sessionRepository,
         private readonly MessageBusInterface $bus,
+        private readonly WebauthnCredentialRepository $webauthnCredentialRepo,
     ) {
     }
 
@@ -46,6 +48,7 @@ class SecurityController extends AbstractController
             'activeSessions' => $activeSessions,
             'currentTokenHash' => $currentTokenHash,
             'changePasswordForm' => $changePasswordForm,
+            'webauthnCredentials' => $this->webauthnCredentialRepo->findByUser($user),
         ]);
     }
 

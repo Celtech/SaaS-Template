@@ -22,10 +22,11 @@ class TwoFactorController extends AbstractController
     private const PROVIDER_LABELS = [
         'totp' => 'Authenticator app',
         'email' => 'Email code',
+        'webauthn' => 'Security key',
     ];
 
     /** Defines display order on the selection page and the default preference. */
-    private const PROVIDER_PRIORITY = ['totp', 'email'];
+    private const PROVIDER_PRIORITY = ['webauthn', 'totp', 'email'];
 
     private const SESSION_RESEND_KEY = '_2fa_email_last_sent';
     private const RESEND_COOLDOWN = 60;
