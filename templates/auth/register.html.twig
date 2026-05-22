@@ -1,0 +1,68 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Create account{% endblock %}
+
+{% block auth_content %}
+<div class="rounded-xl border bg-card p-8 shadow-sm">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-semibold text-card-foreground">Create your account</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Get started for free</p>
+    </div>
+
+    {{ form_start(form, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+
+        {% if form.vars.errors|length > 0 %}
+            <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {% for error in form.vars.errors %}
+                    <p>{{ error.message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="space-y-1">
+            {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+            {{ form_widget(form.name, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'name'}}) }}
+            {{ form_errors(form.name) }}
+        </div>
+
+        <div class="space-y-1">
+            {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+            {{ form_widget(form.email, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'email'}}) }}
+            {{ form_errors(form.email) }}
+        </div>
+
+        <div class="space-y-1">
+            {{ form_label(form.plainPassword.first, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+            {{ form_widget(form.plainPassword.first, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
+            {{ form_errors(form.plainPassword.first) }}
+        </div>
+
+        <div class="space-y-1">
+            {{ form_label(form.plainPassword.second, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+            {{ form_widget(form.plainPassword.second, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
+            {{ form_errors(form.plainPassword.second) }}
+        </div>
+
+        <div class="flex items-start gap-2">
+            {{ form_widget(form.agreeTerms, {'attr': {'class': 'mt-0.5 rounded border-input'}}) }}
+            <div>
+                {{ form_label(form.agreeTerms, null, {'label_attr': {'class': 'text-sm text-muted-foreground'}}) }}
+                {{ form_errors(form.agreeTerms) }}
+            </div>
+        </div>
+
+        <button
+            type="submit"
+            class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+            Create account
+        </button>
+
+    {{ form_end(form) }}
+
+    <p class="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?
+        <a href="{{ path('auth_login') }}" class="font-medium text-primary hover:underline">Sign in</a>
+    </p>
+</div>
+{% endblock %}
