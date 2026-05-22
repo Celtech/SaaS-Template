@@ -1,4 +1,5 @@
 {% extends 'layouts/app.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
 
 {% block title %}Security{% endblock %}
 
@@ -24,23 +25,9 @@
 
         {{ form_start(changePasswordForm, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
 
-            <div class="space-y-1">
-                {{ form_label(changePasswordForm.currentPassword, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-                {{ form_widget(changePasswordForm.currentPassword, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'current-password'}}) }}
-                {{ form_errors(changePasswordForm.currentPassword) }}
-            </div>
-
-            <div class="space-y-1">
-                {{ form_label(changePasswordForm.newPassword.first, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-                {{ form_widget(changePasswordForm.newPassword.first, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
-                {{ form_errors(changePasswordForm.newPassword.first) }}
-            </div>
-
-            <div class="space-y-1">
-                {{ form_label(changePasswordForm.newPassword.second, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
-                {{ form_widget(changePasswordForm.newPassword.second, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring', 'autocomplete': 'new-password'}}) }}
-                {{ form_errors(changePasswordForm.newPassword.second) }}
-            </div>
+            {{ forms.field(changePasswordForm.currentPassword, {'autocomplete': 'current-password'}) }}
+            {{ forms.field(changePasswordForm.newPassword.first, {'autocomplete': 'new-password'}) }}
+            {{ forms.field(changePasswordForm.newPassword.second, {'autocomplete': 'new-password'}) }}
 
             <div class="flex justify-end">
                 <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
