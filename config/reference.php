@@ -1511,6 +1511,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     code_reuse_cache?: scalar|Param|null, // Default: null
  *     code_reuse_cache_duration?: int|Param, // Default: 60
  *     code_reuse_default_handler?: scalar|Param|null, // Default: null
+ *     backup_codes?: bool|array{
+ *         enabled?: scalar|Param|null, // Default: false
+ *         manager?: scalar|Param|null, // Default: "scheb_two_factor.default_backup_code_manager"
+ *     },
  *     email?: bool|array{
  *         enabled?: scalar|Param|null, // Default: false
  *         mailer?: scalar|Param|null, // Default: null

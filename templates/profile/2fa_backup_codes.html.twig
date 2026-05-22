@@ -1,0 +1,48 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Backup codes{% endblock %}
+
+{% block main %}
+<div class="max-w-lg space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Backup codes</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Save these codes somewhere safe — they will not be shown again.
+        </p>
+    </div>
+
+    {% if codes is empty %}
+        <div class="rounded-xl border bg-card p-6 shadow-sm text-center space-y-3">
+            <p class="text-sm text-muted-foreground">These codes have already been viewed or are no longer available.</p>
+            <a href="{{ path('profile_security') }}" class="inline-block text-sm font-medium text-primary hover:underline">
+                Back to security settings
+            </a>
+        </div>
+    {% else %}
+        <div class="rounded-xl border bg-card p-6 shadow-sm space-y-5">
+            <div class="rounded-lg border bg-muted p-4">
+                <ul class="grid grid-cols-2 gap-2">
+                    {% for code in codes %}
+                        <li class="font-mono text-sm text-foreground tracking-wider">
+                            {{ code|slice(0, 5) }}-{{ code|slice(5) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <ul class="space-y-1.5 text-sm text-muted-foreground">
+                <li>Each code can only be used once.</li>
+                <li>Store them in a password manager or print them out.</li>
+                <li>If you lose them, you can regenerate new ones from your security settings.</li>
+            </ul>
+
+            <a
+                href="{{ path('profile_security') }}"
+                class="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+                I've saved these codes
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

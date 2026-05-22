@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Auth;
 
+use App\Entity\User;
 use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Email\Generator\CodeGeneratorInterface;
@@ -106,6 +107,9 @@ class TwoFactorController extends AbstractController
             $resendCooldown = max(0, self::RESEND_COOLDOWN - (time() - (int) $lastSent));
         }
 
+        $tokenUser = $token instanceof TwoFactorTokenInterface ? $token->getUser() : null;
+        $hasBackupCodes = $tokenUser instanceof User && $tokenUser->hasBackupCodes();
+
         $template = $currentProvider === 'email' ? 'auth/2fa_email.html.twig' : 'auth/2fa.html.twig';
 
         return $this->render($template, [
@@ -113,6 +117,26 @@ class TwoFactorController extends AbstractController
             'twoFactorProvider' => $currentProvider,
             'availableTwoFactorProviders' => $availableProviders,
             'resendCooldown' => $resendCooldown,
+            'hasBackupCodes' => $hasBackupCodes,
+        ]);
+    }
+
+    #[Route('/2fa/backup-code', name: '2fa_backup_code')]
+    public function backupCode(Request $request): Response
+    {
+        $token = $this->tokenStorage->getToken();
+        if (!$token instanceof TwoFactorTokenInterface) {
+            return $this->redirectToRoute('2fa_login');
+        }
+
+        $session = $request->getSession();
+        $authError = $session->get(SecurityRequestAttributes::AUTHENTICATION_ERROR);
+        if ($authError instanceof AuthenticationException) {
+            $session->remove(SecurityRequestAttributes::AUTHENTICATION_ERROR);
+        }
+
+        return $this->render('auth/2fa_backup.html.twig', [
+            'authenticationError' => $authError instanceof AuthenticationException ? $authError->getMessageKey() : null,
         ]);
     }
 
