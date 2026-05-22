@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Auth;
 
 use App\Entity\User;
+use App\Security\WebauthnTwoFactorProvider;
 use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Email\Generator\CodeGeneratorInterface;
@@ -22,10 +23,11 @@ class TwoFactorController extends AbstractController
     private const PROVIDER_LABELS = [
         'totp' => 'Authenticator app',
         'email' => 'Email code',
+        'webauthn' => 'Security key',
     ];
 
     /** Defines display order on the selection page and the default preference. */
-    private const PROVIDER_PRIORITY = ['totp', 'email'];
+    private const PROVIDER_PRIORITY = ['webauthn', 'totp', 'email'];
 
     private const SESSION_RESEND_KEY = '_2fa_email_last_sent';
     private const RESEND_COOLDOWN = 60;
@@ -33,6 +35,7 @@ class TwoFactorController extends AbstractController
     public function __construct(
         private readonly TokenStorageInterface $tokenStorage,
         private readonly CodeGeneratorInterface $codeGenerator,
+        private readonly WebauthnTwoFactorProvider $webauthnProvider,
     ) {
     }
 
@@ -79,11 +82,16 @@ class TwoFactorController extends AbstractController
                 } catch (UnknownTwoFactorProviderException) {
                     // ignore invalid provider names
                 }
-            } elseif (\in_array('totp', $token->getTwoFactorProviders(), true)) {
-                try {
-                    $token->preferTwoFactorProvider('totp');
-                } catch (UnknownTwoFactorProviderException) {
-                    // ignore
+            } else {
+                foreach (self::PROVIDER_PRIORITY as $preferred) {
+                    if (\in_array($preferred, $token->getTwoFactorProviders(), true)) {
+                        try {
+                            $token->preferTwoFactorProvider($preferred);
+                        } catch (UnknownTwoFactorProviderException) {
+                            // ignore
+                        }
+                        break;
+                    }
                 }
             }
         }
@@ -110,7 +118,20 @@ class TwoFactorController extends AbstractController
         $tokenUser = $token instanceof TwoFactorTokenInterface ? $token->getUser() : null;
         $hasBackupCodes = $tokenUser instanceof User && $tokenUser->hasBackupCodes();
 
-        $template = $currentProvider === 'email' ? 'auth/2fa_email.html.twig' : 'auth/2fa.html.twig';
+        if ($currentProvider === 'webauthn' && !\is_string($session->get('_webauthn_assertion_options')) && $tokenUser !== null && $token instanceof TwoFactorTokenInterface) {
+            $this->webauthnProvider->prepareAuthentication($tokenUser);
+            // Mark as prepared so scheb's onKernelResponse listener doesn't overwrite
+            // the challenge we just stored — it fires after the controller renders the
+            // template, so without this the session would contain a different challenge
+            // than what was embedded in the page HTML.
+            $token->setTwoFactorProviderPrepared('webauthn');
+        }
+
+        $template = match ($currentProvider) {
+            'email' => 'auth/2fa_email.html.twig',
+            'webauthn' => 'auth/2fa_webauthn.html.twig',
+            default => 'auth/2fa.html.twig',
+        };
 
         return $this->render($template, [
             'authenticationError' => $authError instanceof AuthenticationException ? $authError->getMessageKey() : null,
@@ -118,6 +139,7 @@ class TwoFactorController extends AbstractController
             'availableTwoFactorProviders' => $availableProviders,
             'resendCooldown' => $resendCooldown,
             'hasBackupCodes' => $hasBackupCodes,
+            'webauthnOptionsJson' => $session->get('_webauthn_assertion_options', '{}'),
         ]);
     }
 
