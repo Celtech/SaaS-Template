@@ -65,8 +65,8 @@ class TwoFactorSetupController extends AbstractController
             data: $totp->getProvisioningUri(),
             encoding: new Encoding('UTF-8'),
             errorCorrectionLevel: ErrorCorrectionLevel::High,
-            size: 192,
-            margin: 8,
+            size: 300,
+            margin: 10,
             roundBlockSizeMode: RoundBlockSizeMode::Margin,
         )->build();
 
