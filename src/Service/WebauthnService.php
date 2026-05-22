@@ -164,6 +164,6 @@ final class WebauthnService
 
     private function decodeBase64Url(string $base64url): string
     {
-        return base64_decode(str_pad(strtr($base64url, '-_', '+/'), \strlen($base64url) + (4 - \strlen($base64url) % 4) % 4, '='), true);
+        return (string) base64_decode(str_pad(strtr($base64url, '-_', '+/'), \strlen($base64url) + (4 - \strlen($base64url) % 4) % 4, '='), true);
     }
 }
