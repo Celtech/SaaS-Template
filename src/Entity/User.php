@@ -8,9 +8,10 @@ use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Scheb\TwoFactorBundle\Model\Email\TwoFactorInterface as EmailTwoFactorInterface;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfiguration;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfigurationInterface;
-use Scheb\TwoFactorBundle\Model\Totp\TwoFactorInterface;
+use Scheb\TwoFactorBundle\Model\Totp\TwoFactorInterface as TotpTwoFactorInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
@@ -20,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(columns: ['email'], name: 'idx_users_email')]
 #[ORM\Index(columns: ['deleted_at'], name: 'idx_users_deleted_at')]
 #[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
-class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFactorInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwoFactorInterface, EmailTwoFactorInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
@@ -62,6 +63,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     #[ORM\Column(type: Types::BOOLEAN)]
     private bool $totpEnabled = false;
+
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $emailAuthEnabled = false;
+
+    #[ORM\Column(type: Types::STRING, length: 6, nullable: true)]
+    private ?string $emailAuthCode = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
@@ -330,6 +337,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     public function isTotpEnabled(): bool
     {
         return $this->totpEnabled;
+    }
+
+    public function isEmailAuthEnabled(): bool
+    {
+        return $this->emailAuthEnabled;
+    }
+
+    public function getEmailAuthRecipient(): string
+    {
+        return $this->email;
+    }
+
+    public function getEmailAuthCode(): ?string
+    {
+        return $this->emailAuthCode;
+    }
+
+    public function setEmailAuthCode(string $authCode): void
+    {
+        $this->emailAuthCode = $authCode !== '' ? $authCode : null;
+    }
+
+    public function enableEmailAuth(): static
+    {
+        $this->emailAuthEnabled = true;
+        $this->touch();
+
+        return $this;
+    }
+
+    public function disableEmailAuth(): static
+    {
+        $this->emailAuthEnabled = false;
+        $this->emailAuthCode = null;
+        $this->touch();
+
+        return $this;
     }
 
     public function getCreatedAt(): DateTimeImmutable

@@ -1,0 +1,36 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Choose verification method{% endblock %}
+
+{% block auth_content %}
+<div class="rounded-xl border bg-card p-8 shadow-sm">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-semibold text-card-foreground">Verify another way</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Choose how you'd like to verify your identity
+        </p>
+    </div>
+
+    <div class="space-y-3">
+        {% for provider in providers %}
+            <a
+                href="{{ path('2fa_login', {preferProvider: provider.key}) }}"
+                class="flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium text-foreground hover:bg-muted transition-colors{% if provider.key == currentProvider %} border-primary bg-primary/5{% endif %}"
+            >
+                <span>{{ provider.label }}</span>
+                {% if provider.key == currentProvider %}
+                    <span class="text-xs text-muted-foreground">Current</span>
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                {% endif %}
+            </a>
+        {% endfor %}
+    </div>
+
+    <p class="mt-6 text-center text-sm text-muted-foreground">
+        <a href="{{ path('auth_logout') }}" class="font-medium text-primary hover:underline">Sign in as different user</a>
+    </p>
+</div>
+{% endblock %}

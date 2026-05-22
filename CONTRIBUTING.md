@@ -130,6 +130,7 @@ All variables are documented in `.env.example`. Required variables that have no 
 |---|---|
 | `APP_ENV` | `dev` or `prod` |
 | `APP_SECRET` | Symfony app secret: generate with `make secret` |
+| `APP_NAME` | Application name shown in 2FA authenticator apps and emails |
 | `DATABASE_URL` | PostgreSQL DSN |
 | `MESSENGER_TRANSPORT_DSN` | Valkey DSN for Symfony Messenger |
 | `MAILER_DSN` | ZeptoMail SMTP DSN (see below) |

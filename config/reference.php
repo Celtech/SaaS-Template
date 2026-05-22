@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // This file is auto-generated and is for apps only. Bundles SHOULD NOT rely on its content.
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
@@ -1509,6 +1511,16 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     code_reuse_cache?: scalar|Param|null, // Default: null
  *     code_reuse_cache_duration?: int|Param, // Default: 60
  *     code_reuse_default_handler?: scalar|Param|null, // Default: null
+ *     email?: bool|array{
+ *         enabled?: scalar|Param|null, // Default: false
+ *         mailer?: scalar|Param|null, // Default: null
+ *         code_generator?: scalar|Param|null, // Default: "scheb_two_factor.security.email.default_code_generator"
+ *         form_renderer?: scalar|Param|null, // Default: null
+ *         sender_email?: scalar|Param|null, // Default: null
+ *         sender_name?: scalar|Param|null, // Default: null
+ *         template?: scalar|Param|null, // Default: "@SchebTwoFactor/Authentication/form.html.twig"
+ *         digits?: int|Param, // Default: 4
+ *     },
  *     totp?: bool|array{
  *         enabled?: scalar|Param|null, // Default: false
  *         form_renderer?: scalar|Param|null, // Default: null
