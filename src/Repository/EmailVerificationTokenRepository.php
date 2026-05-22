@@ -31,6 +31,20 @@ class EmailVerificationTokenRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findLatestActiveForUser(User $user): ?EmailVerificationToken
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.user = :user')
+            ->andWhere('t.usedAt IS NULL')
+            ->andWhere('t.expiresAt > :now')
+            ->orderBy('t.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('user', $user)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function invalidateAllForUser(User $user): void
     {
         $this->createQueryBuilder('t')

@@ -34,11 +34,15 @@ class EmailVerificationToken
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $usedAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $createdAt;
+
     public function __construct(User $user)
     {
         $this->id = Uuid::v7();
         $this->user = $user;
         $this->token = bin2hex(random_bytes(32));
+        $this->createdAt = new \DateTimeImmutable();
         $this->expiresAt = new \DateTimeImmutable(sprintf('+%d hours', self::TTL_HOURS));
     }
 
@@ -82,5 +86,10 @@ class EmailVerificationToken
     public function getUsedAt(): ?\DateTimeImmutable
     {
         return $this->usedAt;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
     }
 }

@@ -92,6 +92,10 @@ class PasswordResetController extends AbstractController
             $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
             $user->resetFailedLoginCount();
             $user->unlock();
+            // Receiving and clicking the reset link proves inbox ownership
+            if (!$user->isEmailVerified()) {
+                $user->markEmailVerified();
+            }
             $tokenEntity->markUsed();
             $this->em->flush();
 

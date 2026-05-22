@@ -1,0 +1,32 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Verify your email{% endblock %}
+
+{% block auth_content %}
+<div class="rounded-xl border bg-card p-8 shadow-sm">
+    <div class="mb-6 text-center">
+        <h1 class="text-2xl font-semibold text-card-foreground">Check your inbox</h1>
+        <p class="mt-2 text-sm text-muted-foreground">
+            We sent a verification link to <span class="font-medium text-foreground">{{ email }}</span>.
+            Click the link to activate your account.
+        </p>
+    </div>
+
+    <form method="post" action="{{ path('auth_resend_verification') }}" class="space-y-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('resend_verification') }}">
+        <input type="hidden" name="email" value="{{ email }}">
+        <input type="hidden" name="redirect_to" value="auth_verify_email_notice">
+        <button
+            type="submit"
+            class="w-full rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+            Resend verification email
+        </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-muted-foreground">
+        Already verified?
+        <a href="{{ path('auth_login') }}" class="font-medium text-primary hover:underline">Sign in</a>
+    </p>
+</div>
+{% endblock %}

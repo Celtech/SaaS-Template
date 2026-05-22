@@ -21,3 +21,19 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        App\Tests\Support\AlwaysValidCsrfTokenManager:
+            class: App\Tests\Support\AlwaysValidCsrfTokenManager
+            public: true
+
+        security.csrf.same_origin_token_manager:
+            class: App\Tests\Support\AlwaysValidCsrfTokenManager
+
+        security.csrf.token_manager:
+            alias: App\Tests\Support\AlwaysValidCsrfTokenManager
+            public: true
+
+        Symfony\Component\Security\Csrf\CsrfTokenManagerInterface:
+            alias: App\Tests\Support\AlwaysValidCsrfTokenManager
