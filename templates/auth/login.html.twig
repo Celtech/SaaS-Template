@@ -9,10 +9,28 @@
         <p class="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
     </div>
 
+    {% for message in app.flashes('success') %}
+        <div class="mb-4 rounded-lg bg-success/10 px-4 py-3 text-sm text-success">{{ message }}</div>
+    {% endfor %}
+
     {% if error %}
-        <div class="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {{ error.messageKey|trans(error.messageData, 'security') }}
-        </div>
+        {% if error.messageKey == 'email_not_verified' %}
+            <div class="mb-4 rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning">
+                Your email address hasn't been verified yet.
+            </div>
+            <form method="post" action="{{ path('auth_resend_verification') }}" class="mb-4">
+                <input type="hidden" name="_token" value="{{ csrf_token('resend_verification') }}">
+                <input type="hidden" name="email" value="{{ last_username }}">
+                <input type="hidden" name="redirect_to" value="auth_login">
+                <button type="submit" class="text-sm text-primary hover:underline">
+                    Resend verification email
+                </button>
+            </form>
+        {% else %}
+            <div class="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
+        {% endif %}
     {% endif %}
 
     <form method="post" action="{{ path('auth_login') }}" class="space-y-4">
