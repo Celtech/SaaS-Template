@@ -13,6 +13,54 @@ use Symfony\Component\Uid\Uuid;
  * Writes audit log entries directly via DBAL, bypassing the ORM transaction.
  * This ensures log entries are persisted even when the outer business transaction
  * is rolled back (e.g. failed login attempts, rejected operations).
+ *
+ * ---
+ * AUDIT EVENT CATALOG
+ * ---
+ *
+ * Events are namespaced by domain and follow the pattern:
+ *   <namespace>.<subject>.<outcome>
+ *
+ * Use the typed helper methods (logAuth, logSecurityEvent, etc.) rather than
+ * calling write() directly — they enforce the namespace prefix automatically.
+ *
+ * AUTH EVENTS  (logAuth)
+ * Actions that occur during the authentication and registration flow.
+ *
+ *   auth.registered                   — new user account created
+ *   auth.email.verified               — email address confirmed via token
+ *   auth.login.success                — password credential accepted
+ *   auth.login.failure                — credential rejected (context: reason, email)
+ *   auth.logout                       — explicit sign-out
+ *   auth.password_reset.requested     — password reset email dispatched
+ *   auth.password_reset.completed     — password changed via reset token
+ *   auth.2fa.success                  — 2FA challenge passed (context: provider)
+ *   auth.2fa.failure                  — 2FA challenge failed (context: provider)
+ *
+ * SECURITY EVENTS  (logSecurityEvent)
+ * Changes to a user's security posture or account state.
+ *
+ *   security.2fa.enabled              — TOTP two-factor authentication turned on
+ *   security.2fa.disabled             — TOTP two-factor authentication turned off
+ *   security.2fa.email.enabled        — email-code two-factor authentication turned on
+ *   security.2fa.email.disabled       — email-code two-factor authentication turned off
+ *   security.2fa.backup_codes.regenerated — backup codes replaced
+ *   security.webauthn.key.added       — security key / passkey registered
+ *   security.webauthn.key.removed     — security key / passkey removed
+ *   security.account.locked           — account locked after repeated failures (context: failed_attempts)
+ *   security.user.anonymized          — PII erased under GDPR/CCPA erasure request
+ *
+ * ADMIN EVENTS  (logAdminAction)
+ * Actions taken by administrators via the admin backend.
+ * Pattern: admin.<resource>.<verb>  e.g. admin.user.suspended
+ *
+ * BILLING EVENTS  (logBillingEvent)
+ * Subscription and payment lifecycle events.
+ * Pattern: billing.<resource>.<verb>  e.g. billing.subscription.created
+ *
+ * IMPERSONATION EVENTS  (logImpersonation)
+ * Admin impersonation session lifecycle.
+ * Pattern: impersonation.<verb>  e.g. impersonation.started, impersonation.ended
  */
 class AuditLogger
 {
