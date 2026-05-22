@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 final class PasswordResetTest extends FunctionalTestCase
 {
     #[Test]
-    public function password_reset_auto_verifies_unverified_user(): void
+    public function passwordResetAutoVerifiesUnverifiedUser(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('unverified-reset@example.com');
@@ -32,15 +32,17 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified(), 'Completing a password reset should auto-verify the email');
     }
 
     #[Test]
-    public function password_reset_does_not_re_verify_already_verified_user(): void
+    public function passwordResetDoesNotReVerifyAlreadyVerifiedUser(): void
     {
         $client = $this->client;
         $user = $this->createVerifiedUser('already-verified@example.com');
         $verifiedAt = $user->getEmailVerifiedAt();
+        $this->assertNotNull($verifiedAt);
 
         $token = new PasswordResetToken($user);
         $this->em->persist($token);
@@ -57,16 +59,19 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified());
+        $refreshedVerifiedAt = $refreshed->getEmailVerifiedAt();
+        $this->assertNotNull($refreshedVerifiedAt);
         $this->assertSame(
             $verifiedAt->getTimestamp(),
-            $refreshed->getEmailVerifiedAt()->getTimestamp(),
+            $refreshedVerifiedAt->getTimestamp(),
             'emailVerifiedAt should not change for an already-verified user'
         );
     }
 
     #[Test]
-    public function password_reset_with_invalid_token_redirects_to_forgot_password(): void
+    public function passwordResetWithInvalidTokenRedirectsToForgotPassword(): void
     {
         $client = $this->client;
 
@@ -81,7 +86,7 @@ final class PasswordResetTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function password_reset_with_used_token_fails(): void
+    public function passwordResetWithUsedTokenFails(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('usedtoken-reset@example.com');
@@ -102,11 +107,12 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertFalse($refreshed->isEmailVerified(), 'A used token should not verify the email');
     }
 
     #[Test]
-    public function user_can_login_after_resetting_password_on_unverified_account(): void
+    public function userCanLoginAfterResettingPasswordOnUnverifiedAccount(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('fullflow@example.com');

@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Constraints\IsTrue;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/** @extends AbstractType<null> */
 class RegistrationForm extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void

@@ -6,6 +6,7 @@ namespace App\Service\Auth;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AccountLockoutService
@@ -42,7 +43,7 @@ class AccountLockoutService
         $user->incrementFailedLoginCount();
 
         if ($user->getFailedLoginCount() >= self::MAX_ATTEMPTS) {
-            $until = new \DateTimeImmutable(sprintf('+%d minutes', self::LOCKOUT_MINUTES));
+            $until = new DateTimeImmutable(\sprintf('+%d minutes', self::LOCKOUT_MINUTES));
             $user->lockUntil($until);
         }
 

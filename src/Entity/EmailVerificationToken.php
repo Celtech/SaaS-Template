@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\EmailVerificationTokenRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -29,21 +30,21 @@ class EmailVerificationToken
     private string $token;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $expiresAt;
+    private DateTimeImmutable $expiresAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $usedAt = null;
+    private ?DateTimeImmutable $usedAt = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     public function __construct(User $user)
     {
         $this->id = Uuid::v7();
         $this->user = $user;
         $this->token = bin2hex(random_bytes(32));
-        $this->createdAt = new \DateTimeImmutable();
-        $this->expiresAt = new \DateTimeImmutable(sprintf('+%d hours', self::TTL_HOURS));
+        $this->createdAt = new DateTimeImmutable();
+        $this->expiresAt = new DateTimeImmutable(\sprintf('+%d hours', self::TTL_HOURS));
     }
 
     public function getId(): Uuid
@@ -61,14 +62,14 @@ class EmailVerificationToken
         return $this->token;
     }
 
-    public function getExpiresAt(): \DateTimeImmutable
+    public function getExpiresAt(): DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
     public function isExpired(): bool
     {
-        return $this->expiresAt < new \DateTimeImmutable();
+        return $this->expiresAt < new DateTimeImmutable();
     }
 
     public function isUsed(): bool
@@ -78,17 +79,17 @@ class EmailVerificationToken
 
     public function markUsed(): static
     {
-        $this->usedAt = new \DateTimeImmutable();
+        $this->usedAt = new DateTimeImmutable();
 
         return $this;
     }
 
-    public function getUsedAt(): ?\DateTimeImmutable
+    public function getUsedAt(): ?DateTimeImmutable
     {
         return $this->usedAt;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }

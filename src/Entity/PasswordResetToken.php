@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\PasswordResetTokenRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -29,17 +30,17 @@ class PasswordResetToken
     private string $token;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    private \DateTimeImmutable $expiresAt;
+    private DateTimeImmutable $expiresAt;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $usedAt = null;
+    private ?DateTimeImmutable $usedAt = null;
 
     public function __construct(User $user)
     {
         $this->id = Uuid::v7();
         $this->user = $user;
         $this->token = bin2hex(random_bytes(32));
-        $this->expiresAt = new \DateTimeImmutable(sprintf('+%d minutes', self::TTL_MINUTES));
+        $this->expiresAt = new DateTimeImmutable(\sprintf('+%d minutes', self::TTL_MINUTES));
     }
 
     public function getId(): Uuid
@@ -57,14 +58,14 @@ class PasswordResetToken
         return $this->token;
     }
 
-    public function getExpiresAt(): \DateTimeImmutable
+    public function getExpiresAt(): DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
     public function isExpired(): bool
     {
-        return $this->expiresAt < new \DateTimeImmutable();
+        return $this->expiresAt < new DateTimeImmutable();
     }
 
     public function isUsed(): bool
@@ -74,12 +75,12 @@ class PasswordResetToken
 
     public function markUsed(): static
     {
-        $this->usedAt = new \DateTimeImmutable();
+        $this->usedAt = new DateTimeImmutable();
 
         return $this;
     }
 
-    public function getUsedAt(): ?\DateTimeImmutable
+    public function getUsedAt(): ?DateTimeImmutable
     {
         return $this->usedAt;
     }

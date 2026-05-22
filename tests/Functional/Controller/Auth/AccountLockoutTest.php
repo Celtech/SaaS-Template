@@ -7,12 +7,13 @@ namespace App\Tests\Functional\Controller\Auth;
 use App\Entity\PasswordResetToken;
 use App\Entity\User;
 use App\Tests\FunctionalTestCase;
+use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Test;
 
 final class AccountLockoutTest extends FunctionalTestCase
 {
     #[Test]
-    public function wrong_password_increments_failed_login_count(): void
+    public function wrongPasswordIncrementsFailedLoginCount(): void
     {
         $user = $this->createVerifiedUser('lockcount@example.com');
 
@@ -24,15 +25,16 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(1, $refreshed->getFailedLoginCount());
     }
 
     #[Test]
-    public function account_is_locked_after_five_failed_attempts(): void
+    public function accountIsLockedAfterFiveFailedAttempts(): void
     {
         $this->createVerifiedUser('fivefails@example.com');
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 5; ++$i) {
             $this->client->request('POST', '/auth/login', [
                 'email' => 'fivefails@example.com',
                 'password' => 'WrongPassword!',
@@ -47,10 +49,10 @@ final class AccountLockoutTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function locked_account_login_shows_lockout_error(): void
+    public function lockedAccountLoginShowsLockoutError(): void
     {
         $user = $this->createVerifiedUser('locked@example.com');
-        $user->lockUntil(new \DateTimeImmutable('+15 minutes'));
+        $user->lockUntil(new DateTimeImmutable('+15 minutes'));
         $this->em->flush();
 
         $this->client->request('POST', '/auth/login', [
@@ -64,7 +66,7 @@ final class AccountLockoutTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function successful_login_resets_failed_login_count(): void
+    public function successfulLoginResetsFailedLoginCount(): void
     {
         $user = $this->createVerifiedUser('resetcount@example.com');
         $user->incrementFailedLoginCount();
@@ -81,16 +83,17 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Successful login should reset the failed login count');
         $this->assertFalse($refreshed->isLocked());
     }
 
     #[Test]
-    public function password_reset_unlocks_locked_account(): void
+    public function passwordResetUnlocksLockedAccount(): void
     {
         $user = $this->createVerifiedUser('resetlocked@example.com');
-        $user->lockUntil(new \DateTimeImmutable('+15 minutes'));
-        for ($i = 0; $i < 5; $i++) {
+        $user->lockUntil(new DateTimeImmutable('+15 minutes'));
+        for ($i = 0; $i < 5; ++$i) {
             $user->incrementFailedLoginCount();
         }
         $this->em->flush();
@@ -111,15 +114,16 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertFalse($refreshed->isLocked(), 'Password reset should unlock a locked account');
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Password reset should reset the failed login count');
     }
 
     #[Test]
-    public function locked_user_can_login_after_password_reset(): void
+    public function lockedUserCanLoginAfterPasswordReset(): void
     {
         $user = $this->createVerifiedUser('unlocklogin@example.com');
-        $user->lockUntil(new \DateTimeImmutable('+15 minutes'));
+        $user->lockUntil(new DateTimeImmutable('+15 minutes'));
         $this->em->flush();
 
         $token = new PasswordResetToken($user);
@@ -145,11 +149,11 @@ final class AccountLockoutTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function unverified_login_attempts_do_not_increment_lockout_counter(): void
+    public function unverifiedLoginAttemptsDoNotIncrementLockoutCounter(): void
     {
         $this->createUnverifiedUser('nolockout@example.com');
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 10; ++$i) {
             $this->client->request('POST', '/auth/login', [
                 'email' => 'nolockout@example.com',
                 'password' => 'Password123!',

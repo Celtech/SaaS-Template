@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 final class EmailVerificationTest extends FunctionalTestCase
 {
     #[Test]
-    public function registration_redirects_to_verify_email_notice(): void
+    public function registrationRedirectsToVerifyEmailNotice(): void
     {
         $client = $this->client;
 
@@ -29,7 +29,7 @@ final class EmailVerificationTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function registration_creates_email_verification_token(): void
+    public function registrationCreatesEmailVerificationToken(): void
     {
         $client = $this->client;
 
@@ -54,7 +54,7 @@ final class EmailVerificationTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function login_is_blocked_for_unverified_user(): void
+    public function loginIsBlockedForUnverifiedUser(): void
     {
         $client = $this->client;
         $this->createUnverifiedUser('blocked@example.com');
@@ -73,7 +73,7 @@ final class EmailVerificationTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function login_with_unverified_email_does_not_increment_lockout_counter(): void
+    public function loginWithUnverifiedEmailDoesNotIncrementLockoutCounter(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('lockout@example.com');
@@ -86,11 +86,12 @@ final class EmailVerificationTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Unverified login should not count as a lockout failure');
     }
 
     #[Test]
-    public function verify_email_with_valid_token_marks_user_as_verified(): void
+    public function verifyEmailWithValidTokenMarksUserAsVerified(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('verify@example.com');
@@ -104,11 +105,12 @@ final class EmailVerificationTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified());
     }
 
     #[Test]
-    public function verify_email_with_invalid_token_redirects_with_error(): void
+    public function verifyEmailWithInvalidTokenRedirectsWithError(): void
     {
         $client = $this->client;
 
@@ -120,7 +122,7 @@ final class EmailVerificationTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function verify_email_with_already_used_token_redirects_with_error(): void
+    public function verifyEmailWithAlreadyUsedTokenRedirectsWithError(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('usedtoken@example.com');
@@ -135,7 +137,7 @@ final class EmailVerificationTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function resend_within_cooldown_does_not_send_new_token(): void
+    public function resendWithinCooldownDoesNotSendNewToken(): void
     {
         $client = $this->client;
         $user = $this->createUnverifiedUser('ratelimit@example.com');
@@ -145,7 +147,7 @@ final class EmailVerificationTest extends FunctionalTestCase
         $this->em->persist($token);
         $this->em->flush();
 
-        $tokenCountBefore = count($this->em->getRepository(EmailVerificationToken::class)->findBy(['user' => $user]));
+        $tokenCountBefore = \count($this->em->getRepository(EmailVerificationToken::class)->findBy(['user' => $user]));
 
         $client->request('POST', '/auth/resend-verification', [
             'email' => 'ratelimit@example.com',
@@ -153,12 +155,12 @@ final class EmailVerificationTest extends FunctionalTestCase
         ]);
 
         $this->em->clear();
-        $tokenCountAfter = count($this->em->getRepository(EmailVerificationToken::class)->findBy(['user' => $user]));
+        $tokenCountAfter = \count($this->em->getRepository(EmailVerificationToken::class)->findBy(['user' => $user]));
         $this->assertSame($tokenCountBefore, $tokenCountAfter, 'No new token should be created within the cooldown period');
     }
 
     #[Test]
-    public function login_succeeds_after_email_is_verified(): void
+    public function loginSucceedsAfterEmailIsVerified(): void
     {
         $client = $this->client;
         $this->createVerifiedUser('success@example.com');

@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Cache\CacheInterface;
+use Throwable;
 
 class HealthController extends AbstractController
 {
@@ -28,7 +29,7 @@ class HealthController extends AbstractController
         try {
             $connection->executeQuery('SELECT 1');
             $checks['database'] = 'ok';
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $checks['database'] = 'error';
             $healthy = false;
         }
@@ -36,7 +37,7 @@ class HealthController extends AbstractController
         try {
             $cache->get('health_check_probe', static fn () => true);
             $checks['cache'] = 'ok';
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $checks['cache'] = 'error';
             $healthy = false;
         }

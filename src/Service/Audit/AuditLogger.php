@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Audit;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -21,6 +22,9 @@ class AuditLogger
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function logAuth(
         string $action,
         ?string $actorId = null,
@@ -30,6 +34,10 @@ class AuditLogger
         $this->write('auth.' . $action, $actorId, $actorType, null, null, null, empty($context) ? null : $context);
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     public function logAdminAction(
         string $action,
         string $actorId,
@@ -59,6 +67,10 @@ class AuditLogger
         );
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     public function logBillingEvent(
         string $action,
         string $subjectId,
@@ -71,6 +83,9 @@ class AuditLogger
         $this->write('billing.' . $action, $actorId, $actorType, $subjectId, $subjectType, $oldValue, $newValue);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function logSecurityEvent(
         string $action,
         ?string $actorId = null,
@@ -79,6 +94,10 @@ class AuditLogger
         $this->write('security.' . $action, $actorId, 'user', null, null, null, empty($context) ? null : $context);
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     private function write(
         string $action,
         ?string $actorId,
@@ -103,7 +122,7 @@ class AuditLogger
             'ip_address' => $request?->getClientIp(),
             'user_agent' => $request?->headers->get('User-Agent'),
             'impersonation_session_id' => $impersonationSessionId,
-            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s.u'),
+            'created_at' => new DateTimeImmutable()->format('Y-m-d H:i:s.u'),
         ]);
     }
 }
