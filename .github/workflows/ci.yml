@@ -82,6 +82,14 @@ jobs:
           restore-keys: |
             composer-${{ runner.os }}-php${{ matrix.php }}-
 
+      - name: Cache frontend vendor assets
+        uses: actions/cache@v4
+        with:
+          path: assets/vendor
+          key: importmap-${{ runner.os }}-${{ hashFiles('importmap.php') }}
+          restore-keys: |
+            importmap-${{ runner.os }}-
+
       # bootEnv() in post-install-cmd (cache:clear) requires .env to exist;
       # actual config comes from the workflow env vars above
       - name: Create stub .env for Symfony bootEnv
@@ -89,6 +97,9 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install frontend vendor assets
+        run: php bin/console importmap:install
 
       - name: Create and migrate test database
         run: |
