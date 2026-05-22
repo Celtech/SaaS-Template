@@ -13,9 +13,9 @@
                     <twig:Avatar fallback="{{ app.user.email|slice(0,2) }}" size="sm" />
                 </button>
                 <div data-dropdown-target="menu" hidden class="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-popover py-1 shadow-md">
-                    <a href="{{ path('app_profile') }}" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent">Profile</a>
+                    <a href="{{ path('profile_index') }}" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent">Profile</a>
                     <twig:Separator />
-                    <a href="{{ path('app_logout') }}" class="block px-4 py-2 text-sm text-destructive hover:bg-accent">Sign out</a>
+                    <a href="{{ path('auth_logout') }}" class="block px-4 py-2 text-sm text-destructive hover:bg-accent">Sign out</a>
                 </div>
             </div>
         {% endif %}
