@@ -31,6 +31,7 @@ security:
             entry_point: App\Security\AppAuthenticator
 
     access_control:
+        - { path: ^/health, roles: PUBLIC_ACCESS }
         - { path: ^/auth, roles: PUBLIC_ACCESS }
         - { path: ^/2fa, roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
         - { path: ^/, roles: ROLE_USER }
