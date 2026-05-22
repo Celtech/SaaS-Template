@@ -86,6 +86,7 @@ final class EmailVerificationTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Unverified login should not count as a lockout failure');
     }
 
@@ -104,6 +105,7 @@ final class EmailVerificationTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified());
     }
 

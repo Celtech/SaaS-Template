@@ -32,6 +32,7 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified(), 'Completing a password reset should auto-verify the email');
     }
 
@@ -41,6 +42,7 @@ final class PasswordResetTest extends FunctionalTestCase
         $client = $this->client;
         $user = $this->createVerifiedUser('already-verified@example.com');
         $verifiedAt = $user->getEmailVerifiedAt();
+        $this->assertNotNull($verifiedAt);
 
         $token = new PasswordResetToken($user);
         $this->em->persist($token);
@@ -57,10 +59,13 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertTrue($refreshed->isEmailVerified());
+        $refreshedVerifiedAt = $refreshed->getEmailVerifiedAt();
+        $this->assertNotNull($refreshedVerifiedAt);
         $this->assertSame(
             $verifiedAt->getTimestamp(),
-            $refreshed->getEmailVerifiedAt()->getTimestamp(),
+            $refreshedVerifiedAt->getTimestamp(),
             'emailVerifiedAt should not change for an already-verified user'
         );
     }
@@ -102,6 +107,7 @@ final class PasswordResetTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertFalse($refreshed->isEmailVerified(), 'A used token should not verify the email');
     }
 

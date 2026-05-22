@@ -12,9 +12,7 @@ $_ENV['APP_ENV'] = 'test';
 $_SERVER['APP_ENV'] = 'test';
 putenv('APP_ENV=test');
 
-if (method_exists(Dotenv::class, 'bootEnv')) {
-    new Dotenv()->bootEnv(dirname(__DIR__) . '/.env');
-}
+new Dotenv()->bootEnv(dirname(__DIR__) . '/.env');
 
 if ($_SERVER['APP_DEBUG']) {
     umask(0o000);

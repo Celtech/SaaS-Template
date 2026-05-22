@@ -107,6 +107,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return $this;
     }
 
+    /** @return non-empty-string */
     public function getUserIdentifier(): string
     {
         return $this->email;
@@ -118,7 +119,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
 
-        return array_unique($roles);
+        return array_values(array_unique($roles));
     }
 
     /** @param list<string> $roles */

@@ -25,6 +25,7 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(1, $refreshed->getFailedLoginCount());
     }
 
@@ -82,6 +83,7 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Successful login should reset the failed login count');
         $this->assertFalse($refreshed->isLocked());
     }
@@ -112,6 +114,7 @@ final class AccountLockoutTest extends FunctionalTestCase
 
         $this->em->clear();
         $refreshed = $this->em->find(User::class, $user->getId());
+        $this->assertNotNull($refreshed);
         $this->assertFalse($refreshed->isLocked(), 'Password reset should unlock a locked account');
         $this->assertSame(0, $refreshed->getFailedLoginCount(), 'Password reset should reset the failed login count');
     }

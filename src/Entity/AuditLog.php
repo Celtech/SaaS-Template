@@ -37,9 +37,11 @@ class AuditLog
     #[ORM\Column(type: Types::STRING, length: 50, nullable: true)]
     private ?string $subjectType = null;
 
+    /** @var array<string, mixed>|null */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $oldValue = null;
 
+    /** @var array<string, mixed>|null */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $newValue = null;
 
@@ -55,6 +57,10 @@ class AuditLog
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     public function __construct(
         string $action,
         ?string $actorId = null,
@@ -111,11 +117,13 @@ class AuditLog
         return $this->subjectType;
     }
 
+    /** @return array<string, mixed>|null */
     public function getOldValue(): ?array
     {
         return $this->oldValue;
     }
 
+    /** @return array<string, mixed>|null */
     public function getNewValue(): ?array
     {
         return $this->newValue;

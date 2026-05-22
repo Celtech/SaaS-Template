@@ -22,6 +22,9 @@ class AuditLogger
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function logAuth(
         string $action,
         ?string $actorId = null,
@@ -31,6 +34,10 @@ class AuditLogger
         $this->write('auth.' . $action, $actorId, $actorType, null, null, null, empty($context) ? null : $context);
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     public function logAdminAction(
         string $action,
         string $actorId,
@@ -60,6 +67,10 @@ class AuditLogger
         );
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     public function logBillingEvent(
         string $action,
         string $subjectId,
@@ -72,6 +83,9 @@ class AuditLogger
         $this->write('billing.' . $action, $actorId, $actorType, $subjectId, $subjectType, $oldValue, $newValue);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function logSecurityEvent(
         string $action,
         ?string $actorId = null,
@@ -80,6 +94,10 @@ class AuditLogger
         $this->write('security.' . $action, $actorId, 'user', null, null, null, empty($context) ? null : $context);
     }
 
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
     private function write(
         string $action,
         ?string $actorId,
