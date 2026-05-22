@@ -52,6 +52,7 @@ final class SensitiveDataProcessor
 
     /**
      * @param array<mixed, mixed> $data
+     *
      * @return array<mixed, mixed>
      */
     private function scrub(array $data): array
