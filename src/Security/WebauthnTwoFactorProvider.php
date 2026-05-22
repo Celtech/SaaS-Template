@@ -22,7 +22,7 @@ final class WebauthnTwoFactorProvider implements TwoFactorProviderInterface
     public function __construct(
         private readonly WebauthnCredentialRepository $credentialRepo,
         private readonly WebauthnService $webauthnService,
-        private readonly WebauthnFormRenderer $formRenderer,
+        private readonly TwoFactorFormRendererInterface $formRenderer,
         private readonly RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
     ) {
