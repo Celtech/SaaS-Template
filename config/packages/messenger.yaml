@@ -15,6 +15,7 @@ framework:
         routing:
             'App\Message\Webhook\DeliverWebhookMessage': async
             'App\Message\Mail\SendMailMessage': async
+            'App\Message\User\AnonymizeUserMessage': async
 
 when@test:
     framework:
