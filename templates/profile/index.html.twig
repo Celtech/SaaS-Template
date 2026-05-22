@@ -1,0 +1,48 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block main %}
+<div class="max-w-2xl space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Profile</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage your account information</p>
+    </div>
+
+    <div class="flex gap-4 border-b text-sm">
+        <a href="{{ path('profile_index') }}" class="border-b-2 border-primary pb-3 font-medium text-foreground">
+            General
+        </a>
+        <a href="{{ path('profile_security') }}" class="pb-3 text-muted-foreground hover:text-foreground">
+            Security
+        </a>
+    </div>
+
+    <div class="rounded-xl border bg-card p-6 shadow-sm">
+        {{ form_start(form, {'action': path('profile_update'), 'method': 'post', 'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+
+            <div class="space-y-1">
+                {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(form.name, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+                {{ form_errors(form.name) }}
+            </div>
+
+            <div class="space-y-1">
+                {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(form.email, {'attr': {'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+                {% if not user.emailVerified %}
+                    <p class="text-xs text-warning">Email not yet verified.</p>
+                {% endif %}
+                {{ form_errors(form.email) }}
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Save changes
+                </button>
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock main %}
