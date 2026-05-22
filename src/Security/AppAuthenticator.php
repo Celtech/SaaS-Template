@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\User;
+use App\Service\Audit\AuditLogger;
 use App\Service\Auth\AccountLockoutService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,6 +33,7 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly AccountLockoutService $lockoutService,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -71,6 +73,7 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
         $user = $token->getUser();
         if ($user instanceof User) {
             $this->lockoutService->onSuccess($user);
+            $this->auditLogger->logAuth('login.success', $user->getId()->toRfc4122());
         }
 
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
@@ -82,10 +85,16 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
-        // Don't count "email not verified" as a failed login attempt — it's not a credential error
-        if (!($exception instanceof CustomUserMessageAuthenticationException
-            && $exception->getMessageKey() === self::MSG_EMAIL_NOT_VERIFIED)) {
-            $email = $request->getPayload()->getString('email');
+        $email = $request->getPayload()->getString('email');
+
+        if ($exception instanceof CustomUserMessageAuthenticationException
+            && $exception->getMessageKey() === self::MSG_EMAIL_NOT_VERIFIED) {
+            $this->auditLogger->logAuth('login.failure', null, 'user', [
+                'email' => $email,
+                'reason' => 'email_not_verified',
+            ]);
+        } else {
+            // Credential failures are counted and logged by AccountLockoutService
             $this->lockoutService->onFailure($email);
         }
 

@@ -12,7 +12,7 @@ fi
 
 echo "→ Running PHP CS Fixer on staged files..."
 
-docker compose exec -T app vendor/bin/php-cs-fixer fix $STAGED
+docker compose exec -T app vendor/bin/php-cs-fixer fix --config .php-cs-fixer.php $STAGED
 
 # Re-stage any files that were modified by the fixer
 git add $STAGED

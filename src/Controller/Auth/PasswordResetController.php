@@ -10,6 +10,7 @@ use App\Form\ResetPasswordForm;
 use App\Message\Mail\SendMailMessage;
 use App\Repository\PasswordResetTokenRepository;
 use App\Repository\UserRepository;
+use App\Service\Audit\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,6 +29,7 @@ class PasswordResetController extends AbstractController
         private readonly PasswordResetTokenRepository $tokenRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MessageBusInterface $bus,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -58,6 +60,8 @@ class PasswordResetController extends AbstractController
                     $user->getEmail(),
                     ['name' => $user->getName(), 'reset_url' => $resetUrl],
                 ));
+
+                $this->auditLogger->logAuth('password_reset.requested', $user->getId()->toRfc4122());
             }
 
             // Always show success to prevent email enumeration
@@ -99,6 +103,7 @@ class PasswordResetController extends AbstractController
             $tokenEntity->markUsed();
             $this->em->flush();
 
+            $this->auditLogger->logAuth('password_reset.completed', $user->getId()->toRfc4122());
             $this->addFlash('success', 'Your password has been reset. You can now log in.');
 
             return $this->redirectToRoute('auth_login');
