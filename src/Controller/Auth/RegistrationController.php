@@ -20,6 +20,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 #[Route('/auth')]
 class RegistrationController extends AbstractController
 {
+    private const RESEND_COOLDOWN_SECONDS = 60;
+    private const PENDING_EMAIL_SESSION_KEY = 'pending_verification_email';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -49,21 +52,11 @@ class RegistrationController extends AbstractController
             $this->em->persist($token);
             $this->em->flush();
 
-            $verifyUrl = $this->generateUrl(
-                'auth_verify_email',
-                ['token' => $token->getToken()],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            );
+            $this->sendVerificationEmail($user, $token);
 
-            $this->bus->dispatch(new SendMailMessage(
-                'email/verify_email.html.twig',
-                $user->getEmail(),
-                ['name' => $user->getName(), 'verify_url' => $verifyUrl],
-            ));
+            $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
 
-            $this->addFlash('success', 'Account created! Please check your email to verify your address.');
-
-            return $this->redirectToRoute('auth_login');
+            return $this->redirectToRoute('auth_verify_email_notice');
         }
 
         return $this->render('auth/register.html.twig', [
@@ -71,10 +64,27 @@ class RegistrationController extends AbstractController
         ]);
     }
 
+    #[Route('/verify-email-notice', name: 'auth_verify_email_notice', methods: ['GET'])]
+    public function verifyEmailNotice(Request $request): Response
+    {
+        if ($this->getUser()) {
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $email = $request->getSession()->get(self::PENDING_EMAIL_SESSION_KEY);
+        if (!$email) {
+            return $this->redirectToRoute('auth_login');
+        }
+
+        return $this->render('auth/verify_email_notice.html.twig', [
+            'email' => $email,
+        ]);
+    }
+
     #[Route('/verify-email/{token}', name: 'auth_verify_email')]
     public function verifyEmail(string $token): Response
     {
-        $tokenEntity = $this->em->getRepository(\App\Entity\EmailVerificationToken::class)
+        $tokenEntity = $this->em->getRepository(EmailVerificationToken::class)
             ->findValidByToken($token);
 
         if ($tokenEntity === null) {
@@ -88,8 +98,69 @@ class RegistrationController extends AbstractController
         $tokenEntity->markUsed();
         $this->em->flush();
 
-        $this->addFlash('success', 'Your email address has been verified. You can now log in.');
+        $this->addFlash('success', 'Your email address has been verified. You can now sign in.');
 
         return $this->redirectToRoute('auth_login');
+    }
+
+    #[Route('/resend-verification', name: 'auth_resend_verification', methods: ['POST'])]
+    public function resendVerification(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('resend_verification', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $email = strtolower(trim($request->getPayload()->getString('email')));
+        $redirectTo = $request->getPayload()->getString('redirect_to', 'auth_login');
+        if (!in_array($redirectTo, ['auth_login', 'auth_verify_email_notice'], true)) {
+            $redirectTo = 'auth_login';
+        }
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+
+        if ($user && !$user->isEmailVerified()) {
+            $tokenRepo = $this->em->getRepository(EmailVerificationToken::class);
+            $latest = $tokenRepo->findLatestActiveForUser($user);
+
+            if ($latest !== null) {
+                $elapsed = (new \DateTimeImmutable())->getTimestamp() - $latest->getCreatedAt()->getTimestamp();
+                $remaining = self::RESEND_COOLDOWN_SECONDS - $elapsed;
+
+                if ($remaining > 0) {
+                    $this->addFlash('warning', sprintf(
+                        'Please wait %d more second%s before requesting another verification email.',
+                        $remaining,
+                        $remaining === 1 ? '' : 's'
+                    ));
+
+                    return $this->redirectToRoute($redirectTo);
+                }
+            }
+
+            $tokenRepo->invalidateAllForUser($user);
+            $newToken = new EmailVerificationToken($user);
+            $this->em->persist($newToken);
+            $this->em->flush();
+
+            $this->sendVerificationEmail($user, $newToken);
+            $this->addFlash('success', 'Verification email resent. Please check your inbox.');
+        }
+
+        return $this->redirectToRoute($redirectTo);
+    }
+
+    private function sendVerificationEmail(User $user, EmailVerificationToken $token): void
+    {
+        $verifyUrl = $this->generateUrl(
+            'auth_verify_email',
+            ['token' => $token->getToken()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $this->bus->dispatch(new SendMailMessage(
+            'email/verify_email.html.twig',
+            $user->getEmail(),
+            ['name' => $user->getName(), 'verify_url' => $verifyUrl],
+        ));
     }
 }
