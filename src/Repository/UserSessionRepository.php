@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repository;
+
+use App\Entity\User;
+use App\Entity\UserSession;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<UserSession>
+ */
+class UserSessionRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, UserSession::class);
+    }
+
+    /** @return list<UserSession> */
+    public function findActiveByUser(User $user): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.user = :user')
+            ->andWhere('s.revokedAt IS NULL')
+            ->setParameter('user', $user)
+            ->orderBy('s.lastActiveAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findByTokenHash(string $hash): ?UserSession
+    {
+        return $this->findOneBy(['sessionTokenHash' => $hash, 'revokedAt' => null]);
+    }
+
+    public function revokeAllForUser(User $user, ?string $exceptTokenHash = null): int
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->update()
+            ->set('s.revokedAt', ':now')
+            ->where('s.user = :user')
+            ->andWhere('s.revokedAt IS NULL')
+            ->setParameter('user', $user)
+            ->setParameter('now', new \DateTimeImmutable());
+
+        if ($exceptTokenHash !== null) {
+            $qb->andWhere('s.sessionTokenHash != :except')
+                ->setParameter('except', $exceptTokenHash);
+        }
+
+        return $qb->getQuery()->execute();
+    }
+}
