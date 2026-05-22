@@ -45,7 +45,15 @@
 
     </form>
 
-    <p class="mt-6 text-center text-sm text-muted-foreground">
+    {% if availableTwoFactorProviders is defined and 'email' in availableTwoFactorProviders %}
+        <div class="mt-4 text-center text-sm text-muted-foreground">
+            <a href="{{ path('2fa_login', {preferProvider: 'email'}) }}" class="font-medium text-primary hover:underline">
+                Verify with email code instead
+            </a>
+        </div>
+    {% endif %}
+
+    <p class="mt-4 text-center text-sm text-muted-foreground">
         <a href="{{ path('auth_logout') }}" class="font-medium text-primary hover:underline">Sign in as different user</a>
     </p>
 </div>
