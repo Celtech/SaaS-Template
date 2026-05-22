@@ -21,6 +21,34 @@ class TwoFactorController extends AbstractController
     ) {
     }
 
+    private const PROVIDER_LABELS = [
+        'totp' => 'Authenticator app',
+        'email' => 'Email code',
+    ];
+
+    #[Route('/2fa/select-provider', name: '2fa_select_provider')]
+    public function selectProvider(): Response
+    {
+        $token = $this->tokenStorage->getToken();
+
+        if (!$token instanceof TwoFactorTokenInterface) {
+            return $this->redirectToRoute('2fa_login');
+        }
+
+        $providers = array_map(
+            static fn (string $key) => [
+                'key' => $key,
+                'label' => self::PROVIDER_LABELS[$key] ?? ucfirst($key),
+            ],
+            $token->getTwoFactorProviders(),
+        );
+
+        return $this->render('auth/2fa_select_provider.html.twig', [
+            'currentProvider' => $token->getCurrentTwoFactorProvider(),
+            'providers' => $providers,
+        ]);
+    }
+
     #[Route('/2fa/login', name: '2fa_login')]
     public function form(Request $request): Response
     {

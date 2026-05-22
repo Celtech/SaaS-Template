@@ -45,10 +45,10 @@
 
     </form>
 
-    {% if availableTwoFactorProviders is defined and 'email' in availableTwoFactorProviders %}
+    {% if availableTwoFactorProviders is defined and availableTwoFactorProviders|length > 1 %}
         <div class="mt-4 text-center text-sm text-muted-foreground">
-            <a href="{{ path('2fa_login', {preferProvider: 'email'}) }}" class="font-medium text-primary hover:underline">
-                Verify with email code instead
+            <a href="{{ path('2fa_select_provider') }}" class="font-medium text-primary hover:underline">
+                Verify another way
             </a>
         </div>
     {% endif %}
