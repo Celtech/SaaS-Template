@@ -1,0 +1,21 @@
+#!/bin/sh
+# Run PHPStan before pushing. Prevents type errors from reaching CI.
+# Skip with: git push --no-verify
+
+set -e
+
+echo "→ Running PHPStan..."
+
+docker compose exec -T app \
+    sh -c 'APP_ENV=dev APP_DEBUG=1 APP_SECRET=hook-placeholder \
+        DATABASE_URL="postgresql://app:secret@db:5432/saas_template?serverVersion=17&charset=utf8" \
+        MESSENGER_TRANSPORT_DSN="redis://valkey:6379/messages" \
+        SCHEDULER_DSN="redis://valkey:6379/scheduler" \
+        LOCK_DSN=flock MAILER_DSN=null://null \
+        MAILER_FROM_ADDRESS=noreply@localhost MAILER_FROM_NAME=Hook \
+        STRIPE_SECRET_KEY=x STRIPE_PUBLISHABLE_KEY=x STRIPE_WEBHOOK_SECRET=x \
+        DEFAULT_URI=http://localhost \
+        php bin/console cache:warmup --env=dev --quiet \
+    && vendor/bin/phpstan analyse --memory-limit=512M --no-progress'
+
+echo "✓ Static analysis OK"

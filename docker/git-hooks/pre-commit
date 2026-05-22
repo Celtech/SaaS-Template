@@ -1,0 +1,20 @@
+#!/bin/sh
+# Auto-fix PHP code style on every commit.
+# Runs inside the app container so the PHP version matches CI.
+
+set -e
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.php$' || true)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+echo "→ Running PHP CS Fixer on staged files..."
+
+docker compose exec -T app vendor/bin/php-cs-fixer fix $STAGED
+
+# Re-stage any files that were modified by the fixer
+git add $STAGED
+
+echo "✓ Code style OK"

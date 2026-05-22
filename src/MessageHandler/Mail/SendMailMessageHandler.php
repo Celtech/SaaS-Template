@@ -25,7 +25,7 @@ final class SendMailMessageHandler
 
     public function __invoke(SendMailMessage $message): void
     {
-        $email = (new TemplatedEmail())
+        $email = new TemplatedEmail()
             ->from(new Address($this->fromAddress, $this->fromName))
             ->to($message->to)
             ->htmlTemplate($message->template)
