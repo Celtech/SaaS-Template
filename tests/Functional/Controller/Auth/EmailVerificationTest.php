@@ -21,6 +21,7 @@ final class EmailVerificationTest extends FunctionalTestCase
                 'email' => 'newuser@example.com',
                 'plainPassword' => ['first' => 'Password123!', 'second' => 'Password123!'],
                 'agreeTerms' => '1',
+                '_token' => 'test-token',
             ],
         ]);
 
@@ -38,6 +39,7 @@ final class EmailVerificationTest extends FunctionalTestCase
                 'email' => 'tokencheck@example.com',
                 'plainPassword' => ['first' => 'Password123!', 'second' => 'Password123!'],
                 'agreeTerms' => '1',
+                '_token' => 'test-token',
             ],
         ]);
 

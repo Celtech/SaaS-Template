@@ -22,6 +22,7 @@ abstract class FunctionalTestCase extends WebTestCase
     {
         parent::setUp();
         $this->client = static::createClient();
+        $this->client->disableReboot();
         $container = static::getContainer();
         $this->em = $container->get(EntityManagerInterface::class);
         $this->hasher = $container->get(UserPasswordHasherInterface::class);

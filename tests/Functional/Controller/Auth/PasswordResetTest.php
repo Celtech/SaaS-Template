@@ -24,6 +24,7 @@ final class PasswordResetTest extends FunctionalTestCase
         $client->request('POST', '/auth/reset-password/' . $token->getToken(), [
             'reset_password_form' => [
                 'plainPassword' => ['first' => 'NewPassword456!', 'second' => 'NewPassword456!'],
+                '_token' => 'test-token',
             ],
         ]);
 
@@ -48,8 +49,11 @@ final class PasswordResetTest extends FunctionalTestCase
         $client->request('POST', '/auth/reset-password/' . $token->getToken(), [
             'reset_password_form' => [
                 'plainPassword' => ['first' => 'NewPassword456!', 'second' => 'NewPassword456!'],
+                '_token' => 'test-token',
             ],
         ]);
+
+        $this->assertResponseRedirects('/auth/login');
 
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
@@ -69,6 +73,7 @@ final class PasswordResetTest extends FunctionalTestCase
         $client->request('POST', '/auth/reset-password/notavalidtoken', [
             'reset_password_form' => [
                 'plainPassword' => ['first' => 'NewPassword456!', 'second' => 'NewPassword456!'],
+                '_token' => 'test-token',
             ],
         ]);
 
@@ -89,6 +94,7 @@ final class PasswordResetTest extends FunctionalTestCase
         $client->request('POST', '/auth/reset-password/' . $token->getToken(), [
             'reset_password_form' => [
                 'plainPassword' => ['first' => 'NewPassword456!', 'second' => 'NewPassword456!'],
+                '_token' => 'test-token',
             ],
         ]);
 
@@ -113,6 +119,7 @@ final class PasswordResetTest extends FunctionalTestCase
         $client->request('POST', '/auth/reset-password/' . $token->getToken(), [
             'reset_password_form' => [
                 'plainPassword' => ['first' => 'NewPassword456!', 'second' => 'NewPassword456!'],
+                '_token' => 'test-token',
             ],
         ]);
         $client->followRedirect(); // lands on /auth/login
