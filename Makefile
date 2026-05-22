@@ -9,6 +9,15 @@ CONSOLE = $(PHP) bin/console
 #  Docker
 # ──────────────────────────────────────────────
 
+install: ## Install Composer dependencies (run once after first up, or after composer.json changes)
+	$(COMPOSER) install
+
+hooks: ## Install git hooks (run once per clone)
+	cp docker/git-hooks/pre-commit .git/hooks/pre-commit
+	cp docker/git-hooks/pre-push .git/hooks/pre-push
+	chmod +x .git/hooks/pre-commit .git/hooks/pre-push
+	@echo "Git hooks installed."
+
 up: ## Start all containers in the background
 	$(DOCKER_COMPOSE) up --detach
 
