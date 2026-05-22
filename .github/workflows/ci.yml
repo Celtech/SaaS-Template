@@ -82,12 +82,13 @@ jobs:
           restore-keys: |
             composer-${{ runner.os }}-php${{ matrix.php }}-
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      # bootEnv() needs a .env file to be present; CI vars come from the workflow env above
+      # bootEnv() in post-install-cmd (cache:clear) requires .env to exist;
+      # actual config comes from the workflow env vars above
       - name: Create stub .env for Symfony bootEnv
         run: touch .env
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Create and migrate test database
         run: |
@@ -136,6 +137,10 @@ jobs:
           restore-keys: |
             composer-${{ runner.os }}-php8.4-
 
+      # bootEnv() in post-install-cmd (cache:clear) requires .env to exist
+      - name: Create stub .env for Symfony bootEnv
+        run: touch .env
+
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
@@ -160,9 +165,7 @@ jobs:
           STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
           STRIPE_WEBHOOK_SECRET: whsec_placeholder
           DEFAULT_URI: http://localhost
-        run: |
-          touch .env
-          php bin/console cache:warmup --env=dev
+        run: php bin/console cache:warmup --env=dev
 
       - name: Static analysis
         run: vendor/bin/phpstan analyse --memory-limit=512M --no-progress

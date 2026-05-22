@@ -13,21 +13,19 @@ final class HealthControllerTest extends FunctionalTestCase
     #[Test]
     public function liveness_endpoint_returns_200(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/health');
+        $this->client->request('GET', '/health');
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
 
-        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
         $this->assertSame('ok', $data['status']);
     }
 
     #[Test]
     public function liveness_endpoint_returns_json(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/health');
+        $this->client->request('GET', '/health');
 
         $this->assertResponseHeaderSame('content-type', 'application/json');
     }
@@ -35,12 +33,11 @@ final class HealthControllerTest extends FunctionalTestCase
     #[Test]
     public function readiness_endpoint_returns_200_when_healthy(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/health/ready');
+        $this->client->request('GET', '/health/ready');
 
         $this->assertResponseIsSuccessful();
 
-        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
         $this->assertSame('ok', $data['status']);
         $this->assertArrayHasKey('checks', $data);
         $this->assertSame('ok', $data['checks']['database']);
@@ -50,10 +47,9 @@ final class HealthControllerTest extends FunctionalTestCase
     #[Test]
     public function readiness_endpoint_includes_all_check_keys(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/health/ready');
+        $this->client->request('GET', '/health/ready');
 
-        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('database', $data['checks']);
         $this->assertArrayHasKey('cache', $data['checks']);
     }
