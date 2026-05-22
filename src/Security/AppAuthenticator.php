@@ -27,6 +27,7 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
     use TargetPathTrait;
 
     public const LOGIN_ROUTE = 'auth_login';
+    public const MSG_EMAIL_NOT_VERIFIED = 'email_not_verified';
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -51,6 +52,10 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
                     throw new CustomUserMessageAuthenticationException(
                         'Your account has been temporarily locked due to too many failed login attempts.'
                     );
+                }
+
+                if (!$user->isEmailVerified()) {
+                    throw new CustomUserMessageAuthenticationException(self::MSG_EMAIL_NOT_VERIFIED);
                 }
 
                 return $user;
@@ -79,8 +84,12 @@ class AppAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
-        $email = $request->getPayload()->getString('email');
-        $this->lockoutService->onFailure($email);
+        // Don't count "email not verified" as a failed login attempt — it's not a credential error
+        if (!($exception instanceof CustomUserMessageAuthenticationException
+            && $exception->getMessageKey() === self::MSG_EMAIL_NOT_VERIFIED)) {
+            $email = $request->getPayload()->getString('email');
+            $this->lockoutService->onFailure($email);
+        }
 
         return parent::onAuthenticationFailure($request, $exception);
     }
