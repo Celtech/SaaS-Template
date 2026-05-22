@@ -123,7 +123,49 @@ class TwoFactorSetupController extends AbstractController
 
         $this->auditLogger->logSecurityEvent('2fa.disabled', $user->getId()->toRfc4122());
 
-        $this->addFlash('success', 'Two-factor authentication has been disabled.');
+        $this->addFlash('success', 'Authenticator app two-factor authentication has been disabled.');
+
+        return $this->redirectToRoute('profile_security');
+    }
+
+    #[Route('/email/enable', name: 'profile_2fa_email_enable', methods: ['POST'])]
+    public function enableEmail(Request $request, #[CurrentUser] User $user): Response
+    {
+        if (!$this->isCsrfTokenValid('2fa_email_enable', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($user->isEmailAuthEnabled()) {
+            return $this->redirectToRoute('profile_security');
+        }
+
+        $user->enableEmailAuth();
+        $this->em->flush();
+
+        $this->auditLogger->logSecurityEvent('2fa.email.enabled', $user->getId()->toRfc4122());
+
+        $this->addFlash('success', 'Email code two-factor authentication has been enabled.');
+
+        return $this->redirectToRoute('profile_security');
+    }
+
+    #[Route('/email/disable', name: 'profile_2fa_email_disable', methods: ['POST'])]
+    public function disableEmail(Request $request, #[CurrentUser] User $user): Response
+    {
+        if (!$this->isCsrfTokenValid('2fa_email_disable', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$user->isEmailAuthEnabled()) {
+            return $this->redirectToRoute('profile_security');
+        }
+
+        $user->disableEmailAuth();
+        $this->em->flush();
+
+        $this->auditLogger->logSecurityEvent('2fa.email.disabled', $user->getId()->toRfc4122());
+
+        $this->addFlash('success', 'Email code two-factor authentication has been disabled.');
 
         return $this->redirectToRoute('profile_security');
     }

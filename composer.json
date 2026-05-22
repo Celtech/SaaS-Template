@@ -11,6 +11,7 @@
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
         "scheb/2fa-bundle": "^8.5",
+        "scheb/2fa-email": "^8.5",
         "scheb/2fa-totp": "^8.5",
         "symfony/asset": "8.0.*",
         "symfony/asset-mapper": "*",

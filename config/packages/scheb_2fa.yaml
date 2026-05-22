@@ -8,3 +8,9 @@ scheb_two_factor:
         issuer: '%env(APP_NAME)%'
         server_name: '%env(APP_NAME)%'
         template: auth/2fa.html.twig
+    email:
+        enabled: true
+        sender_email: '%env(MAILER_FROM_ADDRESS)%'
+        sender_name: '%env(MAILER_FROM_NAME)%'
+        digits: 6
+        template: auth/2fa_email.html.twig

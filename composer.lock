@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb2eef8457009c84304e4a47f431af4a",
+    "content-hash": "2c69379834048f81bfb06d200aeab26d",
     "packages": [
         {
             "name": "composer/semver",
@@ -1753,6 +1753,58 @@
                 "source": "https://github.com/scheb/2fa-bundle/tree/v8.5.0"
             },
             "time": "2026-03-24T18:33:45+00:00"
+        },
+        {
+            "name": "scheb/2fa-email",
+            "version": "v8.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/scheb/2fa-email.git",
+                "reference": "6deee3e397c3c189738fd063011f1a512667eb13"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/scheb/2fa-email/zipball/6deee3e397c3c189738fd063011f1a512667eb13",
+                "reference": "6deee3e397c3c189738fd063011f1a512667eb13",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~8.4.0 || ~8.5.0",
+                "scheb/2fa-bundle": "self.version"
+            },
+            "suggest": {
+                "symfony/mailer": "Needed if you want to use the default mailer implementation"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Scheb\\TwoFactorBundle\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Christian Scheb",
+                    "email": "me@christianscheb.de"
+                }
+            ],
+            "description": "Extends scheb/2fa-bundle with two-factor authentication via email",
+            "homepage": "https://github.com/scheb/2fa",
+            "keywords": [
+                "2fa",
+                "Authentication",
+                "email",
+                "symfony",
+                "two-factor",
+                "two-step"
+            ],
+            "support": {
+                "source": "https://github.com/scheb/2fa-email/tree/v8.5.0"
+            },
+            "time": "2026-01-24T13:26:10+00:00"
         },
         {
             "name": "scheb/2fa-totp",
