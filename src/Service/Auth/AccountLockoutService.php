@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Auth;
 
 use App\Entity\User;
+use App\Repository\SecuritySettingsRepository;
 use App\Repository\UserRepository;
 use App\Service\Audit\AuditLogger;
 use DateTimeImmutable;
@@ -12,13 +13,11 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AccountLockoutService
 {
-    private const MAX_ATTEMPTS = 5;
-    private const LOCKOUT_MINUTES = 15;
-
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $em,
         private readonly AuditLogger $auditLogger,
+        private readonly SecuritySettingsRepository $securitySettingsRepo,
     ) {
     }
 
@@ -47,8 +46,9 @@ class AccountLockoutService
 
         $user->incrementFailedLoginCount();
 
-        if ($user->getFailedLoginCount() >= self::MAX_ATTEMPTS) {
-            $until = new DateTimeImmutable(\sprintf('+%d minutes', self::LOCKOUT_MINUTES));
+        $settings = $this->securitySettingsRepo->getSettings();
+        if ($user->getFailedLoginCount() >= $settings->getMaxFailedAttempts()) {
+            $until = new DateTimeImmutable(\sprintf('+%d minutes', $settings->getLockoutMinutes()));
             $user->lockUntil($until);
             $this->auditLogger->logSecurityEvent('account.locked', $user->getId()->toRfc4122(), [
                 'failed_attempts' => $user->getFailedLoginCount(),
