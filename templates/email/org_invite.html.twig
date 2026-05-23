@@ -1,0 +1,31 @@
+{% block subject %}You're invited to join {{ org_name }}{% endblock %}
+
+{% block body_html %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>You're invited to join {{ org_name }}</title>
+</head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
+    <h1 style="font-size: 24px; margin-bottom: 8px;">You've been invited</h1>
+    <p style="color: #555; margin-bottom: 24px;">{{ invited_by_name }} has invited you to join <strong>{{ org_name }}</strong>. Click the button below to create your account and accept the invitation.</p>
+    <a href="{{ register_url }}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+        Accept invitation
+    </a>
+    <p style="margin-top: 24px; color: #888; font-size: 14px;">This invitation expires in {{ expires_hours }} hours. If you were not expecting this invitation, you can ignore this email.</p>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">
+    <p style="color: #888; font-size: 12px;">If the button doesn't work, copy and paste this URL into your browser:<br>{{ register_url }}</p>
+</body>
+</html>
+{% endblock %}
+
+{% block body_text %}
+You've been invited to join {{ org_name }}
+
+{{ invited_by_name }} has invited you to join {{ org_name }}. Visit the link below to create your account and accept the invitation:
+
+{{ register_url }}
+
+This invitation expires in {{ expires_hours }} hours.
+{% endblock %}

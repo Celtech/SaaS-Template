@@ -8,7 +8,9 @@ use App\Entity\EmailVerificationToken;
 use App\Entity\User;
 use App\Form\RegistrationForm;
 use App\Message\Mail\SendMailMessage;
+use App\Repository\OrgInvitationRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\OrgInvitationService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +32,8 @@ class RegistrationController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MessageBusInterface $bus,
         private readonly AuditLogger $auditLogger,
+        private readonly OrgInvitationRepository $invitationRepository,
+        private readonly OrgInvitationService $invitationService,
     ) {
     }
 
@@ -40,7 +44,12 @@ class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $form = $this->createForm(RegistrationForm::class);
+        $inviteToken = $request->query->getString('invite');
+        $invitation = $inviteToken !== '' ? $this->invitationRepository->findPendingByToken($inviteToken) : null;
+
+        $form = $this->createForm(RegistrationForm::class, null, [
+            'invite_email' => $invitation?->getEmail(),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -51,21 +60,36 @@ class RegistrationController extends AbstractController
             $user = new User($email, $name);
             $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
 
-            $token = new EmailVerificationToken($user);
-            $this->em->persist($user);
-            $this->em->persist($token);
-            $this->em->flush();
+            $acceptingInvite = $invitation !== null && strtolower($email) === $invitation->getEmail();
 
-            $this->sendVerificationEmail($user, $token);
+            if ($acceptingInvite) {
+                $user->markEmailVerified();
+                $this->em->persist($user);
+                $this->em->flush();
+                $this->invitationService->acceptInvitation($invitation, $user);
+            } else {
+                $token = new EmailVerificationToken($user);
+                $this->em->persist($user);
+                $this->em->persist($token);
+                $this->em->flush();
+                $this->sendVerificationEmail($user, $token);
+                $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
+            }
+
             $this->auditLogger->logAuth('registered', $user->getId()->toRfc4122());
 
-            $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
+            if ($acceptingInvite) {
+                $this->addFlash('success', 'Your account has been created. You can now sign in.');
+
+                return $this->redirectToRoute('auth_login');
+            }
 
             return $this->redirectToRoute('auth_verify_email_notice');
         }
 
         return $this->render('auth/register.html.twig', [
             'form' => $form,
+            'invitation' => $invitation,
         ]);
     }
 

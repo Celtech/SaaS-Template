@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\RoleContext;
 use App\Entity\User;
 use App\Form\OrgSettingsType;
+use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
 use App\Repository\UserRoleRepository;
@@ -31,6 +32,7 @@ final class OrgSettingsController extends AbstractController
         UserRepository $userRepository,
         UserRoleRepository $userRoleRepository,
         RoleRepository $roleRepository,
+        OrgInvitationRepository $invitationRepository,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -62,6 +64,8 @@ final class OrgSettingsController extends AbstractController
 
         $assignableRoles = $roleRepository->findByContext(RoleContext::Org);
 
+        $canInviteMembers = $this->isGranted('org.members.invite');
+
         return $this->render('org/settings.html.twig', [
             'org' => $org,
             'form' => $form,
@@ -71,6 +75,8 @@ final class OrgSettingsController extends AbstractController
             'canManageSettings' => $canManageSettings,
             'canManageMembers' => $this->isGranted('org.members.manage'),
             'canRemoveMembers' => $this->isGranted('org.members.remove'),
+            'canInviteMembers' => $canInviteMembers,
+            'pendingInvitations' => $canInviteMembers ? $invitationRepository->findPendingByOrg($org) : [],
         ]);
     }
 

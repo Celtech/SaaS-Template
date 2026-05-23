@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Organization;
 use App\Entity\OrgInvitation;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -29,6 +30,20 @@ class OrgInvitationRepository extends ServiceEntityRepository
             ->setParameter('now', new DateTimeImmutable())
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /** @return OrgInvitation[] */
+    public function findPendingByOrg(Organization $org): array
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.organization = :org')
+            ->andWhere('i.acceptedAt IS NULL')
+            ->andWhere('i.expiresAt > :now')
+            ->setParameter('org', $org)
+            ->setParameter('now', new DateTimeImmutable())
+            ->orderBy('i.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     public function findPendingByEmail(string $email): ?OrgInvitation
