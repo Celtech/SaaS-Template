@@ -7,7 +7,11 @@
 <div class="rounded-xl border bg-card p-8 shadow-sm">
     <div class="mb-6 text-center">
         <h1 class="text-2xl font-semibold text-card-foreground">Create your account</h1>
-        <p class="mt-1 text-sm text-muted-foreground">Get started for free</p>
+        {% if invitation %}
+            <p class="mt-1 text-sm text-muted-foreground">You've been invited to join <strong>{{ invitation.organization.name }}</strong>.</p>
+        {% else %}
+            <p class="mt-1 text-sm text-muted-foreground">Get started for free</p>
+        {% endif %}
     </div>
 
     {{ form_start(form, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}

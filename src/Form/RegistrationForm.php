@@ -21,6 +21,8 @@ class RegistrationForm extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $inviteEmail = $options['invite_email'];
+
         $builder
             ->add('name', TextType::class, [
                 'label' => 'Full name',
@@ -31,6 +33,8 @@ class RegistrationForm extends AbstractType
             ])
             ->add('email', EmailType::class, [
                 'label' => 'Email address',
+                'data' => $inviteEmail,
+                'attr' => $inviteEmail !== null ? ['readonly' => true] : [],
                 'constraints' => [
                     new NotBlank(message: 'Please enter an email address'),
                 ],
@@ -61,6 +65,9 @@ class RegistrationForm extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([]);
+        $resolver->setDefaults([
+            'invite_email' => null,
+        ]);
+        $resolver->setAllowedTypes('invite_email', ['null', 'string']);
     }
 }

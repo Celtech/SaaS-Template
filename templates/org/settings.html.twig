@@ -54,7 +54,11 @@
                 <h2 class="text-base font-semibold text-card-foreground">Members</h2>
                 <p class="text-sm text-muted-foreground">{{ members|length }} member{{ members|length != 1 ? 's' : '' }}</p>
             </div>
-            {# Invite link added in Phase 3 PR 5 #}
+            {% if canInviteMembers %}
+                <a href="{{ path('org_invite') }}" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Invite member
+                </a>
+            {% endif %}
         </div>
 
         <ul class="divide-y">

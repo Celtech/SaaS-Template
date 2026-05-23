@@ -71,6 +71,7 @@ final class OrgSettingsController extends AbstractController
             'canManageSettings' => $canManageSettings,
             'canManageMembers' => $this->isGranted('org.members.manage'),
             'canRemoveMembers' => $this->isGranted('org.members.remove'),
+            'canInviteMembers' => $this->isGranted('org.members.invite'),
         ]);
     }
 

@@ -8,7 +8,9 @@ use App\Entity\EmailVerificationToken;
 use App\Entity\User;
 use App\Form\RegistrationForm;
 use App\Message\Mail\SendMailMessage;
+use App\Repository\OrgInvitationRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\OrgInvitationService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +32,8 @@ class RegistrationController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MessageBusInterface $bus,
         private readonly AuditLogger $auditLogger,
+        private readonly OrgInvitationRepository $invitationRepository,
+        private readonly OrgInvitationService $invitationService,
     ) {
     }
 
@@ -40,7 +44,12 @@ class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
 
-        $form = $this->createForm(RegistrationForm::class);
+        $inviteToken = $request->query->getString('invite');
+        $invitation = $inviteToken !== '' ? $this->invitationRepository->findPendingByToken($inviteToken) : null;
+
+        $form = $this->createForm(RegistrationForm::class, null, [
+            'invite_email' => $invitation?->getEmail(),
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -56,6 +65,10 @@ class RegistrationController extends AbstractController
             $this->em->persist($token);
             $this->em->flush();
 
+            if ($invitation !== null && strtolower($email) === $invitation->getEmail()) {
+                $this->invitationService->acceptInvitation($invitation, $user);
+            }
+
             $this->sendVerificationEmail($user, $token);
             $this->auditLogger->logAuth('registered', $user->getId()->toRfc4122());
 
@@ -66,6 +79,7 @@ class RegistrationController extends AbstractController
 
         return $this->render('auth/register.html.twig', [
             'form' => $form,
+            'invitation' => $invitation,
         ]);
     }
 
