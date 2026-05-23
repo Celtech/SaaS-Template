@@ -18,8 +18,29 @@
             {% endblock %}
         {% else %}
             {% block app_nav %}
-                {# App nav items populated in subsequent phases #}
-                <p class="px-2 py-2 text-sm text-sidebar-foreground/50">Nav items coming in Phase 2+</p>
+                {% set currentRoute = app.request.attributes.get('_route') %}
+                <div class="space-y-1">
+                    <a href="{{ path('app_dashboard') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ currentRoute == 'app_dashboard' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                        Dashboard
+                    </a>
+                    {% if app.user and app.user.organization %}
+                        <a href="{{ path('org_settings') }}"
+                           class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                               {{ currentRoute starts with 'org_' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Organization
+                        </a>
+                    {% endif %}
+                    <a href="{{ path('profile_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ currentRoute starts with 'profile_' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                        Profile
+                    </a>
+                </div>
             {% endblock %}
         {% endif %}
     </nav>
