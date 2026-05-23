@@ -11,6 +11,7 @@ use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
 use App\Repository\UserRoleRepository;
+use App\Service\Audit\AuditLogger;
 use App\Service\OrgMemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
@@ -33,6 +34,7 @@ final class OrgSettingsController extends AbstractController
         UserRoleRepository $userRoleRepository,
         RoleRepository $roleRepository,
         OrgInvitationRepository $invitationRepository,
+        AuditLogger $auditLogger,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -43,6 +45,7 @@ final class OrgSettingsController extends AbstractController
         }
 
         $canManageSettings = $this->isGranted('org.settings.manage');
+        $oldName = $org->getName();
         $form = $this->createForm(OrgSettingsType::class, $org);
         $form->handleRequest($request);
 
@@ -51,6 +54,14 @@ final class OrgSettingsController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
             $em->flush();
+            $auditLogger->logOrgEvent(
+                'settings.updated',
+                $currentUser->getId()->toRfc4122(),
+                $org->getId()->toRfc4122(),
+                'organization',
+                ['name' => $oldName],
+                ['name' => $org->getName()],
+            );
             $this->addFlash('success', 'Organization settings saved.');
 
             return $this->redirectToRoute('org_settings');
@@ -156,7 +167,7 @@ final class OrgSettingsController extends AbstractController
         }
 
         try {
-            $memberService->changeMemberRole($org, $member, $role);
+            $memberService->changeMemberRole($org, $member, $role, $currentUser);
             $this->addFlash('success', \sprintf('%s\'s role updated to %s.', $member->getName(), $role->getName()));
         } catch (LogicException $e) {
             $this->addFlash('error', $e->getMessage());

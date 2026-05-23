@@ -12,6 +12,7 @@ use App\Message\Mail\SendMailMessage;
 use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
+use App\Service\Audit\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -26,6 +27,7 @@ final class OrgInvitationService
         private readonly RoleRepository $roleRepository,
         private readonly MessageBusInterface $bus,
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -63,6 +65,15 @@ final class OrgInvitationService
             ],
         ));
 
+        $this->auditLogger->logOrgEvent(
+            'invitation.sent',
+            $invitedBy->getId()->toRfc4122(),
+            $org->getId()->toRfc4122(),
+            'organization',
+            null,
+            ['email' => $email],
+        );
+
         return $invitation;
     }
 
@@ -79,5 +90,14 @@ final class OrgInvitationService
 
         $invitation->accept();
         $this->em->flush();
+
+        $this->auditLogger->logOrgEvent(
+            'invitation.accepted',
+            $user->getId()->toRfc4122(),
+            $org->getId()->toRfc4122(),
+            'organization',
+            ['invited_by' => $invitation->getInvitedBy()->getId()->toRfc4122()],
+            null,
+        );
     }
 }

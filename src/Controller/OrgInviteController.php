@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\OrgInviteType;
 use App\Repository\OrgInvitationRepository;
+use App\Service\Audit\AuditLogger;
 use App\Service\OrgInvitationService;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -25,6 +26,7 @@ final class OrgInviteController extends AbstractController
         private readonly OrgInvitationService $invitationService,
         private readonly OrgInvitationRepository $invitationRepository,
         private readonly EntityManagerInterface $em,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -96,10 +98,20 @@ final class OrgInviteController extends AbstractController
             return $this->redirectToRoute('org_settings');
         }
 
+        $revokedEmail = $invitation->getEmail();
         $this->em->remove($invitation);
         $this->em->flush();
 
-        $this->addFlash('success', \sprintf('Invitation to %s has been revoked.', $invitation->getEmail()));
+        $this->auditLogger->logOrgEvent(
+            'invitation.revoked',
+            $user->getId()->toRfc4122(),
+            $id,
+            'org_invitation',
+            ['email' => $revokedEmail, 'org_id' => $org->getId()->toRfc4122()],
+            null,
+        );
+
+        $this->addFlash('success', \sprintf('Invitation to %s has been revoked.', $revokedEmail));
 
         return $this->redirectToRoute('org_settings');
     }

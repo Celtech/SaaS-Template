@@ -61,6 +61,19 @@ use Symfony\Component\Uid\Uuid;
  * IMPERSONATION EVENTS  (logImpersonation)
  * Admin impersonation session lifecycle.
  * Pattern: impersonation.<verb>  e.g. impersonation.started, impersonation.ended
+ *
+ * ORG EVENTS  (logOrgEvent)
+ * Organisation lifecycle and access-control changes. Subject is the entity most
+ * directly affected (org, user, or invitation). Include org_id in old/new values
+ * when the subject is a user so the org context is always recoverable.
+ *
+ *   org.created                   — new organisation created (subject: org)
+ *   org.settings.updated          — org name changed (subject: org, old/new: {name})
+ *   org.member.removed            — member removed (subject: removed user, new: {org_id})
+ *   org.member.role.changed       — member role changed (subject: user, old/new: {role, org_id})
+ *   org.invitation.sent           — invite dispatched (subject: org, new: {email})
+ *   org.invitation.accepted       — invited user joined (subject: org, old: {invited_by})
+ *   org.invitation.revoked        — pending invite cancelled (subject: invitation, old: {email, org_id})
  */
 class AuditLogger
 {
@@ -140,6 +153,21 @@ class AuditLogger
         array $context = [],
     ): void {
         $this->write('security.' . $action, $actorId, 'user', null, null, null, empty($context) ? null : $context);
+    }
+
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
+    public function logOrgEvent(
+        string $action,
+        string $actorId,
+        string $subjectId,
+        string $subjectType,
+        ?array $oldValue = null,
+        ?array $newValue = null,
+    ): void {
+        $this->write('org.' . $action, $actorId, 'user', $subjectId, $subjectType, $oldValue, $newValue);
     }
 
     /**
