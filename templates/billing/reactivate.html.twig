@@ -1,0 +1,40 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Payment Required{% endblock %}
+
+{% block main %}
+<div class="max-w-lg mx-auto space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Payment Required</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Your last payment didn't go through. Update your payment method to restore access.
+        </p>
+    </div>
+
+    <div class="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        {% if subscription %}
+            Your <strong>{{ subscription.plan.name }}</strong> subscription is
+            <strong>{{ subscription.status.value|replace({'_': ' '}) }}</strong>.
+            {% if subscription.currentPeriodEnd %}
+                Access will be fully blocked after
+                <strong>{{ subscription.currentPeriodEnd|date('M j, Y') }}</strong>.
+            {% endif %}
+        {% else %}
+            Your subscription is no longer active.
+        {% endif %}
+    </div>
+
+    <div class="rounded-lg border bg-card p-6 space-y-4">
+        <p class="text-sm text-muted-foreground">
+            Update your payment method via the Stripe billing portal. Changes take effect immediately.
+        </p>
+        {# Portal link wired in PR 4 #}
+        <a href="#" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            Update payment method
+        </a>
+        <p class="text-xs text-muted-foreground">
+            You'll be redirected to our secure payment provider.
+        </p>
+    </div>
+</div>
+{% endblock %}

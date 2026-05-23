@@ -1,0 +1,78 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Choose a Plan{% endblock %}
+
+{% block main %}
+<div class="max-w-5xl mx-auto space-y-8">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Choose a Plan</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Select the plan that's right for your team. You can change or cancel at any time.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {% for plan in plans %}
+            <div class="rounded-lg border bg-card p-6 flex flex-col gap-4
+                {% if currentSubscription and currentSubscription.plan.id == plan.id %}ring-2 ring-primary{% endif %}">
+                <div>
+                    <h2 class="text-lg font-semibold text-foreground">{{ plan.name }}</h2>
+                    {% if plan.description %}
+                        <p class="mt-1 text-sm text-muted-foreground">{{ plan.description }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    {% if plan.free %}
+                        <span class="text-3xl font-bold text-foreground">Free</span>
+                    {% else %}
+                        <span class="text-3xl font-bold text-foreground">
+                            ${{ (plan.monthlyPriceCents / 100)|number_format(0) }}
+                        </span>
+                        <span class="text-sm text-muted-foreground">/ month</span>
+                        {% if plan.annualPriceCents > 0 %}
+                            <p class="text-xs text-muted-foreground mt-1">
+                                or ${{ (plan.annualPriceCents / 100)|number_format(0) }}/yr
+                                (save ${{ ((plan.monthlyPriceCents * 12 - plan.annualPriceCents) / 100)|number_format(0) }})
+                            </p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="flex-1">
+                    <ul class="space-y-2 text-sm text-muted-foreground">
+                        {% for pe in plan.planEntitlements %}
+                            <li class="flex items-center gap-2">
+                                <svg class="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>{{ pe.entitlement.name }}:
+                                    {% if pe.unlimited %}Unlimited
+                                    {% elseif pe.entitlement.type.value == 'boolean' %}
+                                        {{ pe.boolValue ? 'Yes' : 'No' }}
+                                    {% else %}
+                                        {{ pe.intValue }}
+                                    {% endif %}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="mt-auto">
+                    {% if currentSubscription and currentSubscription.plan.id == plan.id %}
+                        <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
+                            Current plan
+                        </span>
+                    {% else %}
+                        {# Checkout links wired in PR 4 #}
+                        <a href="#" class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                            Get started
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
