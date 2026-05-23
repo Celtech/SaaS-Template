@@ -13,7 +13,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function setupRedirectsToSecurityIfTotpAlreadyEnabled(): void
     {
-        $user = $this->createVerifiedUser('totp-on@example.com');
+        $user = $this->createUserWithOrg('totp-on@example.com');
         $user->enableTotp('JBSWY3DPEHPK3PXP');
         $this->em->flush();
 
@@ -26,7 +26,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function setupRendersQrCodeAndSecretForFreshUser(): void
     {
-        $user = $this->createVerifiedUser('fresh-2fa@example.com');
+        $user = $this->createUserWithOrg('fresh-2fa@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/setup');
@@ -39,7 +39,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function setupReusesSessionSecretOnSubsequentLoads(): void
     {
-        $user = $this->createVerifiedUser('reuse-secret@example.com');
+        $user = $this->createUserWithOrg('reuse-secret@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/setup');
@@ -54,7 +54,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableRedirectsToSecurityIfTotpAlreadyEnabled(): void
     {
-        $user = $this->createVerifiedUser('already-on@example.com');
+        $user = $this->createUserWithOrg('already-on@example.com');
         $user->enableTotp('JBSWY3DPEHPK3PXP');
         $this->em->flush();
 
@@ -67,7 +67,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableRedirectsToSetupWhenSessionSecretIsMissing(): void
     {
-        $user = $this->createVerifiedUser('no-secret@example.com');
+        $user = $this->createUserWithOrg('no-secret@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/enable', ['_token' => 'test', 'code' => '123456']);
@@ -78,7 +78,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableFlashesErrorForInvalidCode(): void
     {
-        $user = $this->createVerifiedUser('bad-code@example.com');
+        $user = $this->createUserWithOrg('bad-code@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/setup');
@@ -92,7 +92,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableActivatesTotpAndRedirectsToBackupCodes(): void
     {
-        $user = $this->createVerifiedUser('enable-ok@example.com');
+        $user = $this->createUserWithOrg('enable-ok@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/setup');
@@ -111,7 +111,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function backupCodesPageShowsGeneratedCodesAfterEnable(): void
     {
-        $user = $this->createVerifiedUser('backup-display@example.com');
+        $user = $this->createUserWithOrg('backup-display@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/setup');
@@ -130,7 +130,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function backupCodesPageShowsEmptyListWhenNoCodesInSession(): void
     {
-        $user = $this->createVerifiedUser('no-backup@example.com');
+        $user = $this->createUserWithOrg('no-backup@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/backup-codes');
@@ -141,7 +141,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function disableRedirectsToSecurityIfTotpNotEnabled(): void
     {
-        $user = $this->createVerifiedUser('disable-off@example.com');
+        $user = $this->createUserWithOrg('disable-off@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/disable', ['_token' => 'test', 'code' => '000000']);
@@ -152,7 +152,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function disableFlashesErrorForInvalidCode(): void
     {
-        $user = $this->createVerifiedUser('disable-bad@example.com');
+        $user = $this->createUserWithOrg('disable-bad@example.com');
         $user->enableTotp('JBSWY3DPEHPK3PXP');
         $this->em->flush();
 
@@ -168,7 +168,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     public function disableDeactivatesTotpAndRedirectsWithSuccessFlash(): void
     {
         $secret = 'JBSWY3DPEHPK3PXP';
-        $user = $this->createVerifiedUser('disable-ok@example.com');
+        $user = $this->createUserWithOrg('disable-ok@example.com');
         $user->enableTotp($secret);
         $this->em->flush();
 
@@ -188,7 +188,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableEmailRedirectsIfAlreadyEnabled(): void
     {
-        $user = $this->createVerifiedUser('email-on@example.com');
+        $user = $this->createUserWithOrg('email-on@example.com');
         $user->enableEmailAuth();
         $this->em->flush();
 
@@ -201,7 +201,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function enableEmailActivatesEmailAuthAndRedirectsWithSuccessFlash(): void
     {
-        $user = $this->createVerifiedUser('email-enable@example.com');
+        $user = $this->createUserWithOrg('email-enable@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/email/enable', ['_token' => 'test']);
@@ -217,7 +217,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function disableEmailRedirectsIfNotEnabled(): void
     {
-        $user = $this->createVerifiedUser('email-disable-off@example.com');
+        $user = $this->createUserWithOrg('email-disable-off@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/email/disable', ['_token' => 'test']);
@@ -228,7 +228,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function disableEmailDeactivatesEmailAuthAndRedirectsWithSuccessFlash(): void
     {
-        $user = $this->createVerifiedUser('email-disable@example.com');
+        $user = $this->createUserWithOrg('email-disable@example.com');
         $user->enableEmailAuth();
         $this->em->flush();
 
@@ -246,7 +246,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function regenerateBackupCodesRedirectsIfTotpNotEnabled(): void
     {
-        $user = $this->createVerifiedUser('regen-off@example.com');
+        $user = $this->createUserWithOrg('regen-off@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/backup-codes/regenerate', ['_token' => 'test']);
@@ -257,7 +257,7 @@ final class TwoFactorSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function regenerateBackupCodesGeneratesNewCodesAndRedirects(): void
     {
-        $user = $this->createVerifiedUser('regen-ok@example.com');
+        $user = $this->createUserWithOrg('regen-ok@example.com');
         $user->enableTotp('JBSWY3DPEHPK3PXP');
         $user->generateBackupCodes();
         $this->em->flush();

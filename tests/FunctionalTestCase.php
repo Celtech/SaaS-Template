@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use App\Entity\User;
+use App\Service\OrganizationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -56,6 +57,19 @@ abstract class FunctionalTestCase extends WebTestCase
         $user = $this->createUnverifiedUser($email, $password, $name);
         $user->markEmailVerified();
         $this->em->flush();
+
+        return $user;
+    }
+
+    protected function createUserWithOrg(
+        string $email = 'verified@example.com',
+        string $password = 'Password123!',
+        string $name = 'Test User',
+        string $orgName = 'Test Workspace',
+    ): User {
+        $user = $this->createVerifiedUser($email, $password, $name);
+        $orgService = static::getContainer()->get(OrganizationService::class);
+        $orgService->createForUser($user, $orgName);
 
         return $user;
     }
