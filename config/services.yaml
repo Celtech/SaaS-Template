@@ -26,6 +26,10 @@ services:
             $appUrl: '%env(DEFAULT_URI)%'
             $appName: '%env(APP_NAME)%'
 
+    App\Service\Stripe\StripeService:
+        arguments:
+            $stripeSecretKey: '%env(STRIPE_SECRET_KEY)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 

@@ -1,0 +1,23 @@
+{% extends 'layouts/admin.html.twig' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Admin Dashboard</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage plans, entitlements, and platform settings.</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="{{ path('admin_plans_index') }}" class="rounded-lg border bg-card p-5 hover:bg-accent/30 transition-colors">
+            <h2 class="font-medium text-foreground">Plans</h2>
+            <p class="mt-1 text-sm text-muted-foreground">Create and manage subscription plans with Stripe sync.</p>
+        </a>
+        <a href="{{ path('admin_entitlements_index') }}" class="rounded-lg border bg-card p-5 hover:bg-accent/30 transition-colors">
+            <h2 class="font-medium text-foreground">Entitlements</h2>
+            <p class="mt-1 text-sm text-muted-foreground">Define feature flags and limits assigned to plans.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

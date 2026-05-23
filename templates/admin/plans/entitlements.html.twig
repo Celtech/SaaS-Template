@@ -1,0 +1,80 @@
+{% extends 'layouts/admin.html.twig' %}
+
+{% block title %}{{ plan.name }} — Entitlements{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl space-y-6">
+    <div class="flex items-center gap-3">
+        <a href="{{ path('admin_plans_index') }}" class="text-sm text-muted-foreground hover:text-foreground">← Plans</a>
+        <h1 class="text-2xl font-semibold text-foreground">{{ plan.name }}: Entitlements</h1>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <form method="POST" action="{{ path('admin_plans_entitlements', {id: plan.id}) }}" class="space-y-4">
+        <input type="hidden" name="_token" value="{{ csrf_token('plan_entitlements_' ~ plan.id) }}">
+
+        <div class="rounded-lg border bg-card">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b">
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Entitlement</th>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground w-40">Value</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for entitlement in entitlements %}
+                    {% set currentVal = currentValues[entitlement.id.toRfc4122] ?? '' %}
+                    <tr class="hover:bg-muted/30">
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-foreground">{{ entitlement.name }}</p>
+                            <p class="font-mono text-xs text-muted-foreground">{{ entitlement.slug }}</p>
+                            {% if entitlement.description %}
+                                <p class="mt-0.5 text-xs text-muted-foreground">{{ entitlement.description }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-muted-foreground">{{ entitlement.type.value }}</td>
+                        <td class="px-4 py-3">
+                            {% if entitlement.type.value == 'boolean' %}
+                                <select name="entitlements[{{ entitlement.id }}]"
+                                        class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                    <option value="">— not set —</option>
+                                    <option value="1" {{ currentVal == '1' ? 'selected' }}>Enabled (1)</option>
+                                    <option value="0" {{ currentVal == '0' ? 'selected' }}>Disabled (0)</option>
+                                </select>
+                            {% elseif entitlement.type.value == 'unlimited' %}
+                                <select name="entitlements[{{ entitlement.id }}]"
+                                        class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                                    <option value="">— not set —</option>
+                                    <option value="-1" {{ currentVal == '-1' ? 'selected' }}>Unlimited (-1)</option>
+                                </select>
+                            {% else %}
+                                <input type="text"
+                                       name="entitlements[{{ entitlement.id }}]"
+                                       value="{{ currentVal }}"
+                                       placeholder="-1 = unlimited, 0 = disabled"
+                                       class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                Save entitlements
+            </button>
+            <a href="{{ path('admin_plans_index') }}" class="text-sm text-muted-foreground hover:text-foreground">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

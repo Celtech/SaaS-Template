@@ -1,0 +1,71 @@
+{% extends 'layouts/admin.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-xl space-y-6">
+    <div class="flex items-center gap-3">
+        <a href="{{ path('admin_plans_index') }}" class="text-sm text-muted-foreground hover:text-foreground">← Plans</a>
+        <h1 class="text-2xl font-semibold text-foreground">{{ title }}</h1>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if plan.stripeProductId %}
+        <div class="rounded-md bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+            Stripe product: <span class="font-mono">{{ plan.stripeProductId }}</span>
+            {% if plan.stripePriceIdMonthly %} · Monthly price: <span class="font-mono">{{ plan.stripePriceIdMonthly }}</span>{% endif %}
+            {% if plan.stripePriceIdAnnual %} · Annual price: <span class="font-mono">{{ plan.stripePriceIdAnnual }}</span>{% endif %}
+        </div>
+    {% endif %}
+
+    {{ form_start(form, {attr: {class: 'space-y-4'}}) }}
+        {{ forms.field(form.name) }}
+        {{ forms.field(form.slug) }}
+        {{ forms.field(form.description) }}
+
+        <div class="grid grid-cols-2 gap-4">
+            {{ forms.field(form.monthlyPriceCents) }}
+            {{ forms.field(form.annualPriceCents) }}
+        </div>
+
+        {{ forms.field(form.sortOrder) }}
+
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                {{ form_widget(form.isFree, {attr: {class: 'h-4 w-4 rounded border-input'}}) }}
+                {{ form_label(form.isFree, null, {label_attr: {class: 'text-sm text-foreground'}}) }}
+            </div>
+            {{ form_errors(form.isFree) }}
+            <p class="text-xs text-muted-foreground">{{ form.isFree.vars.help }}</p>
+
+            <div class="flex items-center gap-2">
+                {{ form_widget(form.isActive, {attr: {class: 'h-4 w-4 rounded border-input'}}) }}
+                {{ form_label(form.isActive, null, {label_attr: {class: 'text-sm text-foreground'}}) }}
+            </div>
+            {{ form_errors(form.isActive) }}
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                Save plan
+            </button>
+            <a href="{{ path('admin_plans_index') }}" class="text-sm text-muted-foreground hover:text-foreground">Cancel</a>
+        </div>
+
+        {% if not plan.free and plan.id is defined %}
+            <p class="text-xs text-muted-foreground">
+                Changing the monthly or annual price will create new Stripe prices and archive the old ones.
+                Existing subscribers keep their current price until their next renewal.
+            </p>
+        {% endif %}
+    {{ form_end(form) }}
+</div>
+{% endblock %}
