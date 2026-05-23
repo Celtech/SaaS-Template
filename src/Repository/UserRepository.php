@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Organization;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -34,5 +35,16 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function findByEmail(string $email): ?User
     {
         return $this->findOneBy(['email' => strtolower(trim($email))]);
+    }
+
+    /** @return User[] */
+    public function findByOrganization(Organization $org): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.organization = :org')
+            ->setParameter('org', $org)
+            ->orderBy('u.name', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

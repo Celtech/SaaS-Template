@@ -1,0 +1,123 @@
+{% extends 'layouts/app.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
+
+{% block title %}Organization Settings{% endblock %}
+
+{% block main %}
+<div class="max-w-3xl space-y-8">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Organization</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage your organization settings and members.</p>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="rounded-lg bg-success/10 px-4 py-3 text-sm text-success">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
+    {% endfor %}
+
+    {# General settings #}
+    <div class="rounded-xl border bg-card p-6 shadow-sm">
+        <h2 class="mb-4 text-base font-semibold text-card-foreground">General</h2>
+
+        {{ form_start(form, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+
+            {% if form.vars.errors|length > 0 %}
+                <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {% for error in form.vars.errors %}
+                        <p>{{ error.message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {{ forms.field(form.name) }}
+
+            {% if canManageSettings %}
+                <div class="flex justify-end">
+                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                        Save changes
+                    </button>
+                </div>
+            {% else %}
+                {{ form_widget(form.name, {'attr': {'disabled': true}}) }}
+                <p class="text-xs text-muted-foreground">You do not have permission to edit organization settings.</p>
+            {% endif %}
+
+        {{ form_end(form) }}
+    </div>
+
+    {# Members #}
+    <div class="rounded-xl border bg-card shadow-sm">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+            <div>
+                <h2 class="text-base font-semibold text-card-foreground">Members</h2>
+                <p class="text-sm text-muted-foreground">{{ members|length }} member{{ members|length != 1 ? 's' : '' }}</p>
+            </div>
+            {# Invite link added in Phase 3 PR 5 #}
+        </div>
+
+        <ul class="divide-y">
+            {% for member in members %}
+                {% set memberId = member.id.toRfc4122 %}
+                {% set roles = memberRoles[memberId] ?? [] %}
+                {% set isOwner = member.id.toRfc4122 == org.owner.id.toRfc4122 %}
+                {% set isCurrentUser = member.id.toRfc4122 == app.user.id.toRfc4122 %}
+                <li class="flex items-center justify-between gap-4 px-6 py-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium text-foreground">
+                            {{ member.name }}
+                            {% if isCurrentUser %}
+                                <span class="ml-1 text-xs text-muted-foreground">(you)</span>
+                            {% endif %}
+                        </p>
+                        <p class="truncate text-xs text-muted-foreground">{{ member.email }}</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        {# Role badge / change form #}
+                        {% if canManageMembers and not isOwner %}
+                            <form method="post" action="{{ path('org_member_role', {userId: memberId}) }}" class="flex items-center gap-1">
+                                <input type="hidden" name="_token" value="{{ csrf_token('org_member_role_' ~ memberId) }}">
+                                <select
+                                    name="role"
+                                    onchange="this.form.submit()"
+                                    class="rounded border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                >
+                                    {% for role in assignableRoles %}
+                                        {% if role.slug != 'org-owner' %}
+                                            <option value="{{ role.slug }}" {% if roles|length > 0 and roles[0].role.slug == role.slug %}selected{% endif %}>
+                                                {{ role.name }}
+                                            </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-foreground">
+                                {% if isOwner %}
+                                    Owner
+                                {% elseif roles|length > 0 %}
+                                    {{ roles[0].role.name }}
+                                {% else %}
+                                    Member
+                                {% endif %}
+                            </span>
+                        {% endif %}
+
+                        {# Remove button #}
+                        {% if canRemoveMembers and not isOwner and not isCurrentUser %}
+                            <form method="post" action="{{ path('org_member_remove', {userId: memberId}) }}" onsubmit="return confirm('Remove {{ member.name }} from the organization?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('org_member_remove_' ~ memberId) }}">
+                                <button type="submit" class="text-xs text-destructive hover:underline">
+                                    Remove
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
