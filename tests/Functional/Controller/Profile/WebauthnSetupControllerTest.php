@@ -13,7 +13,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function registerRendersFormAndStoresOptionsInSession(): void
     {
-        $user = $this->createVerifiedUser('webauthn-register@example.com');
+        $user = $this->createUserWithOrg('webauthn-register@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/webauthn/register');
@@ -26,7 +26,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function saveReturnsErrorFlashForEmptyName(): void
     {
-        $user = $this->createVerifiedUser('webauthn-save-name@example.com');
+        $user = $this->createUserWithOrg('webauthn-save-name@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/webauthn/register');
@@ -44,7 +44,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function saveReturnsErrorFlashForEmptyResponse(): void
     {
-        $user = $this->createVerifiedUser('webauthn-save-resp@example.com');
+        $user = $this->createUserWithOrg('webauthn-save-resp@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/webauthn/register');
@@ -62,7 +62,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function saveReturnsErrorFlashWhenSessionOptionsAreMissing(): void
     {
-        $user = $this->createVerifiedUser('webauthn-save-no-session@example.com');
+        $user = $this->createUserWithOrg('webauthn-save-no-session@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('POST', '/profile/2fa/webauthn/register', [
@@ -79,7 +79,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function saveReturnsErrorFlashWhenVerificationFails(): void
     {
-        $user = $this->createVerifiedUser('webauthn-verify-fail@example.com');
+        $user = $this->createUserWithOrg('webauthn-verify-fail@example.com');
         $this->client->loginUser($user);
 
         $this->client->request('GET', '/profile/2fa/webauthn/register');
@@ -97,7 +97,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function removeReturns404ForNonExistentCredential(): void
     {
-        $user = $this->createVerifiedUser('webauthn-remove-404@example.com');
+        $user = $this->createUserWithOrg('webauthn-remove-404@example.com');
         $this->client->loginUser($user);
 
         $fakeId = '01900000-0000-7000-8000-000000000000';
@@ -111,8 +111,8 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function removeReturns404WhenCredentialBelongsToDifferentUser(): void
     {
-        $owner = $this->createVerifiedUser('cred-owner@example.com');
-        $attacker = $this->createVerifiedUser('cred-attacker@example.com');
+        $owner = $this->createUserWithOrg('cred-owner@example.com');
+        $attacker = $this->createUserWithOrg('cred-attacker@example.com');
 
         $credential = new WebauthnCredential($owner, 'Owners Key', 'cred-id-xyz', []);
         $this->em->persist($credential);
@@ -129,7 +129,7 @@ final class WebauthnSetupControllerTest extends FunctionalTestCase
     #[Test]
     public function removeDeletesCredentialAndRedirectsWithSuccessFlash(): void
     {
-        $user = $this->createVerifiedUser('webauthn-remove-ok@example.com');
+        $user = $this->createUserWithOrg('webauthn-remove-ok@example.com');
 
         $credential = new WebauthnCredential($user, 'YubiKey', 'cred-id-remove', []);
         $this->em->persist($credential);
