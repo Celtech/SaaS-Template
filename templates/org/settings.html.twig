@@ -31,16 +31,15 @@
                 </div>
             {% endif %}
 
-            {{ forms.field(form.name) }}
-
             {% if canManageSettings %}
+                {{ forms.field(form.name) }}
                 <div class="flex justify-end">
                     <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
                         Save changes
                     </button>
                 </div>
             {% else %}
-                {{ form_widget(form.name, {'attr': {'disabled': true}}) }}
+                {{ forms.field(form.name, {'disabled': true}) }}
                 <p class="text-xs text-muted-foreground">You do not have permission to edit organization settings.</p>
             {% endif %}
 
