@@ -75,6 +75,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwo
     #[ORM\Column(type: Types::JSON, options: ['default' => '[]'])]
     private array $backupCodes = [];
 
+    #[ORM\ManyToOne(targetEntity: Organization::class, inversedBy: 'members')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Organization $organization = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
 
@@ -439,6 +443,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TotpTwo
     public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getOrganization(): ?Organization
+    {
+        return $this->organization;
+    }
+
+    public function setOrganization(?Organization $organization): void
+    {
+        $this->organization = $organization;
+        $this->touch();
     }
 
     public function eraseCredentials(): void
