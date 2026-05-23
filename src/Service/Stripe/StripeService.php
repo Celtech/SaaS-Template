@@ -33,11 +33,12 @@ final class StripeService
      */
     public function createProduct(string $name, ?string $description = null): Product
     {
-        return $this->stripe->products->create([
-            'name' => $name,
-            'description' => $description,
-            'type' => 'service',
-        ]);
+        $params = ['name' => $name, 'type' => 'service'];
+        if ($description !== null) {
+            $params['description'] = $description;
+        }
+
+        return $this->stripe->products->create($params);
     }
 
     /**
@@ -105,7 +106,9 @@ final class StripeService
      */
     public function syncPlanPrices(Plan $plan): void
     {
-        if ($plan->getStripeProductId() === null) {
+        $productId = $plan->getStripeProductId();
+
+        if ($productId === null) {
             return;
         }
 
@@ -114,7 +117,7 @@ final class StripeService
             if ($plan->getStripePriceIdMonthly() !== null) {
                 $this->archivePrice($plan->getStripePriceIdMonthly());
             }
-            $price = $this->createPrice($plan->getStripeProductId(), $plan->getMonthlyPriceCents(), 'month');
+            $price = $this->createPrice($productId, $plan->getMonthlyPriceCents(), 'month');
             $plan->setStripePriceIdMonthly($price->id);
         }
 
@@ -123,7 +126,7 @@ final class StripeService
             if ($plan->getStripePriceIdAnnual() !== null) {
                 $this->archivePrice($plan->getStripePriceIdAnnual());
             }
-            $price = $this->createPrice($plan->getStripeProductId(), $plan->getAnnualPriceCents(), 'year');
+            $price = $this->createPrice($productId, $plan->getAnnualPriceCents(), 'year');
             $plan->setStripePriceIdAnnual($price->id);
         }
     }

@@ -119,7 +119,7 @@ final class PlanAdminController extends AbstractController
                     if ($pricesChanged) {
                         $stripeService->syncPlanPrices($plan);
                     }
-                } elseif (!$plan->isFree() && $plan->getStripeProductId() === null) {
+                } elseif (!$plan->isFree()) {
                     // Plan was free and is now paid — create Stripe objects
                     $product = $stripeService->createProduct($plan->getName(), $plan->getDescription());
                     $plan->setStripeProductId($product->id);
