@@ -8,7 +8,7 @@ use App\Entity\Organization;
 use App\Entity\User;
 use Symfony\Bundle\SecurityBundle\Security;
 
-final class CurrentOrganizationProvider
+final class CurrentOrganizationProvider implements OrganizationProviderInterface
 {
     public function __construct(private readonly Security $security)
     {

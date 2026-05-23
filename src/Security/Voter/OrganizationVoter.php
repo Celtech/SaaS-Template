@@ -7,7 +7,7 @@ namespace App\Security\Voter;
 use App\Entity\Permission;
 use App\Entity\User;
 use App\Repository\UserRoleRepository;
-use App\Security\CurrentOrganizationProvider;
+use App\Security\OrganizationProviderInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -19,7 +19,7 @@ final class OrganizationVoter extends Voter
 {
     public function __construct(
         private readonly UserRoleRepository $userRoleRepository,
-        private readonly CurrentOrganizationProvider $organizationProvider,
+        private readonly OrganizationProviderInterface $organizationProvider,
     ) {
     }
 
