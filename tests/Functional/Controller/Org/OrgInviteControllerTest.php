@@ -172,6 +172,80 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertNull($newUser->getOrganization());
     }
 
+    #[Test]
+    public function ownerCanRevokeInvitation(): void
+    {
+        $owner = $this->createUserWithOrg('revoke-owner@example.com', 'Password123!', 'Owner');
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $invitation = new OrgInvitation($org, 'revoke-me@example.com', $owner);
+        $this->em->persist($invitation);
+        $this->em->flush();
+        $invId = $invitation->getId()->toRfc4122();
+
+        $this->client->loginUser($owner);
+        $this->client->request('POST', '/org/invitations/' . $invId . '/revoke', [
+            '_token' => $this->getCsrfToken('org_invitation_revoke_' . $invId),
+        ]);
+
+        $this->assertResponseRedirects('/org/settings');
+
+        $this->em->clear();
+        $revoked = $this->em->find(OrgInvitation::class, $invitation->getId());
+        $this->assertNull($revoked);
+    }
+
+    #[Test]
+    public function memberWithoutPermissionCannotRevoke(): void
+    {
+        $owner = $this->createUserWithOrg('revoke-perm-owner@example.com', 'Password123!', 'Owner');
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $member = $this->createVerifiedUser('revoke-perm-member@example.com');
+        $memberRole = static::getContainer()->get(\App\Repository\RoleRepository::class)->findBySlug('org-member');
+        $this->assertNotNull($memberRole);
+        $this->em->persist(new \App\Entity\UserRole($member, $memberRole, $org->getId()));
+        $member->setOrganization($org);
+
+        $invitation = new OrgInvitation($org, 'someone@example.com', $owner);
+        $this->em->persist($invitation);
+        $this->em->flush();
+        $invId = $invitation->getId()->toRfc4122();
+
+        $this->client->loginUser($member);
+        $this->client->request('POST', '/org/invitations/' . $invId . '/revoke', [
+            '_token' => $this->getCsrfToken('org_invitation_revoke_' . $invId),
+        ]);
+
+        $this->assertResponseStatusCodeSame(403);
+
+        // Invitation should still exist
+        $this->em->clear();
+        $still = $this->em->find(OrgInvitation::class, $invitation->getId());
+        $this->assertNotNull($still);
+    }
+
+    #[Test]
+    public function pendingInvitationsAppearOnSettingsPage(): void
+    {
+        $owner = $this->createUserWithOrg('pending-list-owner@example.com', 'Password123!', 'Owner');
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $invitation = new OrgInvitation($org, 'listed@example.com', $owner);
+        $this->em->persist($invitation);
+        $this->em->flush();
+
+        $this->client->loginUser($owner);
+        $this->client->request('GET', '/org/settings');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('body', 'listed@example.com');
+        $this->assertSelectorTextContains('body', 'Pending invitations');
+    }
+
     private function getCsrfToken(string $tokenId): string
     {
         return static::getContainer()

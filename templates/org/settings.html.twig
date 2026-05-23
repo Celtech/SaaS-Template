@@ -123,5 +123,34 @@
             {% endfor %}
         </ul>
     </div>
+
+    {# Pending invitations #}
+    {% if canInviteMembers and pendingInvitations|length > 0 %}
+    <div class="rounded-xl border bg-card shadow-sm">
+        <div class="border-b px-6 py-4">
+            <h2 class="text-base font-semibold text-card-foreground">Pending invitations</h2>
+            <p class="text-sm text-muted-foreground">{{ pendingInvitations|length }} pending</p>
+        </div>
+        <ul class="divide-y">
+            {% for invitation in pendingInvitations %}
+                {% set invId = invitation.id.toRfc4122 %}
+                <li class="flex items-center justify-between gap-4 px-6 py-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium text-foreground">{{ invitation.email }}</p>
+                        <p class="text-xs text-muted-foreground">
+                            Invited by {{ invitation.invitedBy.name }} &middot; expires {{ invitation.expiresAt|date('M j, Y') }}
+                        </p>
+                    </div>
+                    <form method="post" action="{{ path('org_invitation_revoke', {id: invId}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('org_invitation_revoke_' ~ invId) }}">
+                        <button type="submit" class="text-xs text-destructive hover:underline">
+                            Revoke
+                        </button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
