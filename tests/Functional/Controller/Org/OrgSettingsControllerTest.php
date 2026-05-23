@@ -37,6 +37,8 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $this->em->clear();
 
         $refreshed = $this->em->find(\App\Entity\User::class, $user->getId());
+        $this->assertNotNull($refreshed);
+        $this->assertNotNull($refreshed->getOrganization());
         $this->assertSame('New Name Inc.', $refreshed->getOrganization()->getName());
     }
 
@@ -58,6 +60,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $owner = $this->createUserWithOrg('org-owner@example.com', 'Password123!', 'Owner');
         $org = $owner->getOrganization();
 
+        $this->assertNotNull($org);
         $member = $this->createVerifiedUser('org-member@example.com');
         $memberRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-member');
         $this->assertNotNull($memberRole);
@@ -78,6 +81,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
     {
         $owner = $this->createUserWithOrg('remove-owner@example.com', 'Password123!', 'Owner');
         $org = $owner->getOrganization();
+        $this->assertNotNull($org);
 
         $member = $this->createVerifiedUser('remove-member@example.com');
         $memberRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-member');
@@ -96,6 +100,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $this->em->clear();
 
         $refreshed = $this->em->find(\App\Entity\User::class, $member->getId());
+        $this->assertNotNull($refreshed);
         $this->assertNull($refreshed->getOrganization());
     }
 
@@ -105,6 +110,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $owner = $this->createUserWithOrg('cant-remove-owner@example.com', 'Password123!', 'Owner');
         $ownerId = $owner->getId()->toRfc4122();
         $org = $owner->getOrganization();
+        $this->assertNotNull($org);
 
         $this->client->loginUser($owner);
         $this->client->request('POST', '/org/members/' . $ownerId . '/remove', [
@@ -116,8 +122,10 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         // Owner must still belong to the org
         $this->em->clear();
         $refreshed = $this->em->find(\App\Entity\User::class, $owner->getId());
-        $this->assertNotNull($refreshed->getOrganization());
-        $this->assertTrue($refreshed->getOrganization()->getId()->equals($org->getId()));
+        $this->assertNotNull($refreshed);
+        $refreshedOrg = $refreshed->getOrganization();
+        $this->assertNotNull($refreshedOrg);
+        $this->assertTrue($refreshedOrg->getId()->equals($org->getId()));
     }
 
     #[Test]
@@ -125,6 +133,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
     {
         $owner = $this->createUserWithOrg('role-owner@example.com', 'Password123!', 'Owner');
         $org = $owner->getOrganization();
+        $this->assertNotNull($org);
 
         $member = $this->createVerifiedUser('role-member@example.com');
         $memberRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-member');
@@ -145,6 +154,7 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $userRoleRepo = static::getContainer()->get(UserRoleRepository::class);
         $this->em->clear();
         $refreshedMember = $this->em->find(\App\Entity\User::class, $member->getId());
+        $this->assertNotNull($refreshedMember);
         $roles = $userRoleRepo->findForUser($refreshedMember, $org->getId());
         $slugs = array_map(static fn (UserRole $ur) => $ur->getRole()->getSlug(), $roles);
         $this->assertContains('org-admin', $slugs);
