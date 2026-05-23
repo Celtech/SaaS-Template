@@ -125,11 +125,12 @@ final class OrgInviteControllerTest extends FunctionalTestCase
             ],
         ]);
 
-        $this->assertResponseRedirects('/auth/verify-email-notice');
+        $this->assertResponseRedirects('/auth/login');
 
         $this->em->clear();
         $newUser = $this->em->getRepository(\App\Entity\User::class)->findByEmail('invited@example.com');
         $this->assertNotNull($newUser);
+        $this->assertTrue($newUser->isEmailVerified());
         $this->assertNotNull($newUser->getOrganization());
         $this->assertTrue($newUser->getOrganization()->getId()->equals($org->getId()));
 

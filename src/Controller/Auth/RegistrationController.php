@@ -60,19 +60,29 @@ class RegistrationController extends AbstractController
             $user = new User($email, $name);
             $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
 
-            $token = new EmailVerificationToken($user);
-            $this->em->persist($user);
-            $this->em->persist($token);
-            $this->em->flush();
+            $acceptingInvite = $invitation !== null && strtolower($email) === $invitation->getEmail();
 
-            if ($invitation !== null && strtolower($email) === $invitation->getEmail()) {
+            if ($acceptingInvite) {
+                $user->markEmailVerified();
+                $this->em->persist($user);
+                $this->em->flush();
                 $this->invitationService->acceptInvitation($invitation, $user);
+            } else {
+                $token = new EmailVerificationToken($user);
+                $this->em->persist($user);
+                $this->em->persist($token);
+                $this->em->flush();
+                $this->sendVerificationEmail($user, $token);
+                $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
             }
 
-            $this->sendVerificationEmail($user, $token);
             $this->auditLogger->logAuth('registered', $user->getId()->toRfc4122());
 
-            $request->getSession()->set(self::PENDING_EMAIL_SESSION_KEY, $user->getEmail());
+            if ($acceptingInvite) {
+                $this->addFlash('success', 'Your account has been created. You can now sign in.');
+
+                return $this->redirectToRoute('auth_login');
+            }
 
             return $this->redirectToRoute('auth_verify_email_notice');
         }
