@@ -1,17 +1,7 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-{% if app.user and is_impersonated() %}
-<div class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-warning text-warning-foreground px-4 py-2 text-sm font-medium">
-    <span>
-        Viewing as <strong>{{ app.user.email }}</strong> (impersonation session)
-    </span>
-    <a href="{{ path('app_dashboard') }}?_switch_user=_exit" class="underline hover:no-underline">
-        End Impersonation
-    </a>
-</div>
-{% endif %}
-<div class="flex h-screen {% if app.user and is_impersonated() %}pt-9{% endif %} overflow-hidden bg-background">
+<div class="flex h-screen overflow-hidden bg-background">
     <twig:Sidebar :admin="true" />
     <div class="flex flex-1 flex-col overflow-hidden">
         <twig:Topbar :admin="true" />

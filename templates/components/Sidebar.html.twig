@@ -12,9 +12,20 @@
     <nav class="flex-1 overflow-y-auto px-4 py-4">
         {% if admin %}
             {% block admin_nav %}
-                <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">Management</p>
-                {# Admin nav items populated in Phase 7 #}
-                <p class="px-2 py-2 text-sm text-sidebar-foreground/50">Nav items coming in Phase 7</p>
+                {% set cr = app.request.attributes.get('_route') %}
+                <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">Billing</p>
+                <div class="space-y-1 mb-4">
+                    <a href="{{ path('admin_plans_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_plans' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Plans
+                    </a>
+                    <a href="{{ path('admin_entitlements_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_entitlements' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Entitlements
+                    </a>
+                </div>
             {% endblock %}
         {% else %}
             {% block app_nav %}

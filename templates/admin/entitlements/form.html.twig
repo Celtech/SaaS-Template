@@ -1,0 +1,35 @@
+{% extends 'layouts/admin.html.twig' %}
+{% import 'form/field.html.twig' as forms %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-lg space-y-6">
+    <div class="flex items-center gap-3">
+        <a href="{{ path('admin_entitlements_index') }}" class="text-sm text-muted-foreground hover:text-foreground">← Entitlements</a>
+        <h1 class="text-2xl font-semibold text-foreground">{{ title }}</h1>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {{ form_start(form, {attr: {class: 'space-y-4'}}) }}
+        {{ forms.field(form.name) }}
+        {{ forms.field(form.slug) }}
+        {{ forms.field(form.type) }}
+        {{ forms.field(form.description) }}
+
+        <div class="flex items-center gap-3 pt-2">
+            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                Save entitlement
+            </button>
+            <a href="{{ path('admin_entitlements_index') }}" class="text-sm text-muted-foreground hover:text-foreground">Cancel</a>
+        </div>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

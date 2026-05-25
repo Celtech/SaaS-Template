@@ -1,0 +1,62 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Entitlements{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-foreground">Entitlements</h1>
+            <p class="mt-1 text-sm text-muted-foreground">Define feature flags and limits that can be assigned to plans.</p>
+        </div>
+        <a href="{{ path('admin_entitlements_new') }}" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            New entitlement
+        </a>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="rounded-lg border bg-card">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Slug</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for entitlement in entitlements %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-3 font-medium text-foreground">{{ entitlement.name }}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-muted-foreground">{{ entitlement.slug }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                            {{ entitlement.type.value }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground text-xs">{{ entitlement.description ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ path('admin_entitlements_edit', {id: entitlement.id}) }}"
+                           class="text-xs text-muted-foreground hover:text-foreground">Edit</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No entitlements yet. <a href="{{ path('admin_entitlements_new') }}" class="text-primary hover:underline">Create your first entitlement.</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
