@@ -10,6 +10,7 @@ use App\Form\RegistrationForm;
 use App\Message\Mail\SendMailMessage;
 use App\Repository\OrgInvitationRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\Billing\PlanTokenService;
 use App\Service\OrgInvitationService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,6 +28,8 @@ class RegistrationController extends AbstractController
     private const RESEND_COOLDOWN_SECONDS = 60;
     private const PENDING_EMAIL_SESSION_KEY = 'pending_verification_email';
 
+    private const string PENDING_PLAN_SESSION_KEY = 'billing.pending_plan';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -34,6 +37,7 @@ class RegistrationController extends AbstractController
         private readonly AuditLogger $auditLogger,
         private readonly OrgInvitationRepository $invitationRepository,
         private readonly OrgInvitationService $invitationService,
+        private readonly PlanTokenService $planTokenService,
     ) {
     }
 
@@ -46,6 +50,15 @@ class RegistrationController extends AbstractController
 
         $inviteToken = $request->query->getString('invite');
         $invitation = $inviteToken !== '' ? $this->invitationRepository->findPendingByToken($inviteToken) : null;
+
+        // Validate and store plan passthrough token if present (see docs/PLAN_TOKEN.md)
+        $rawPlanToken = $request->query->getString('plan_token');
+        if ($rawPlanToken !== '') {
+            $pendingPlan = $this->planTokenService->validate($rawPlanToken);
+            if ($pendingPlan !== null) {
+                $request->getSession()->set(self::PENDING_PLAN_SESSION_KEY, $pendingPlan);
+            }
+        }
 
         $form = $this->createForm(RegistrationForm::class, null, [
             'invite_email' => $invitation?->getEmail(),
