@@ -39,6 +39,17 @@ class BillingSettings
     #[ORM\Column(type: 'integer')]
     private int $gracePeriodDays = self::DEFAULT_GRACE_PERIOD_DAYS;
 
+    /** When true, Stripe Checkout is used at signup to collect a card before the trial starts. */
+    #[ORM\Column(type: 'boolean')]
+    private bool $requireCreditCard = false;
+
+    /**
+     * Slug of the plan given as a trial to users who sign up without a plan token.
+     * Null means no automatic trial — users go straight to the free tier (or billing_plans if no free tier).
+     */
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $defaultTrialPlanSlug = null;
+
     public function getId(): int
     {
         return $this->id;
@@ -102,5 +113,25 @@ class BillingSettings
     public function setGracePeriodDays(int $gracePeriodDays): void
     {
         $this->gracePeriodDays = $gracePeriodDays;
+    }
+
+    public function isRequireCreditCard(): bool
+    {
+        return $this->requireCreditCard;
+    }
+
+    public function setRequireCreditCard(bool $requireCreditCard): void
+    {
+        $this->requireCreditCard = $requireCreditCard;
+    }
+
+    public function getDefaultTrialPlanSlug(): ?string
+    {
+        return $this->defaultTrialPlanSlug;
+    }
+
+    public function setDefaultTrialPlanSlug(?string $defaultTrialPlanSlug): void
+    {
+        $this->defaultTrialPlanSlug = $defaultTrialPlanSlug;
     }
 }

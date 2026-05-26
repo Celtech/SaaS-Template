@@ -28,10 +28,12 @@ final class PlanTokenService
 
     public function generate(string $planSlug, string $interval): string
     {
+        $now = time();
         $payload = $this->base64UrlEncode((string) json_encode([
             'plan' => $planSlug,
             'interval' => $interval,
-            'exp' => time() + self::TTL_SECONDS,
+            'iat' => $now,
+            'exp' => $now + self::TTL_SECONDS,
         ], \JSON_THROW_ON_ERROR));
 
         $signature = hash_hmac('sha256', $payload, $this->secret);
@@ -42,7 +44,7 @@ final class PlanTokenService
     /**
      * Validates the token and returns the decoded payload on success, or null on failure.
      *
-     * @return array{plan: string, interval: string}|null
+     * @return array{plan: string, interval: string, iat: int}|null
      */
     public function validate(string $token): ?array
     {
@@ -83,7 +85,10 @@ final class PlanTokenService
             return null;
         }
 
-        return ['plan' => $data['plan'], 'interval' => $data['interval']];
+        // iat added in a later version; fall back to now so proration skips gracefully on old tokens
+        $iat = isset($data['iat']) && \is_int($data['iat']) ? $data['iat'] : time();
+
+        return ['plan' => $data['plan'], 'interval' => $data['interval'], 'iat' => $iat];
     }
 
     private function base64UrlEncode(string $data): string
