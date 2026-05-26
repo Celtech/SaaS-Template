@@ -67,7 +67,10 @@
                     </div>
 
                     <div>
-                        {% if plan.free %}
+                        {% if plan.customQuote %}
+                            <span class="text-2xl font-bold text-foreground">Custom pricing</span>
+                            <p class="text-sm text-muted-foreground mt-1">Tailored to your organization's needs.</p>
+                        {% elseif plan.free %}
                             <span class="text-3xl font-bold text-foreground">Free</span>
                         {% else %}
                             <div x-show="interval === 'month'">
@@ -121,6 +124,12 @@
                             <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
                                 Current plan
                             </span>
+                        {% elseif plan.customQuote %}
+                            <a href="mailto:sales@example.com?subject=Enterprise%20Plan%20Inquiry"
+                               class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium
+                                      text-primary-foreground hover:bg-primary/90">
+                                Contact sales
+                            </a>
                         {% elseif plan.free %}
                             <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
                                 Free plan
