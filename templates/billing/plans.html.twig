@@ -131,9 +131,14 @@
                                 Contact sales
                             </a>
                         {% elseif plan.free %}
-                            <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
-                                Free plan
-                            </span>
+                            <form method="POST" action="{{ path('billing_select_free') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('billing_select_free') }}">
+                                <button type="submit"
+                                    class="block w-full text-center rounded-md border border-border px-4 py-2 text-sm
+                                           font-medium text-foreground hover:bg-muted">
+                                    Get started free
+                                </button>
+                            </form>
                         {% else %}
                             <div x-show="interval === 'month'">
                                 <form method="POST" action="{{ path('billing_checkout') }}">

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Subscription;
+use App\Entity\SubscriptionStatus;
 use App\Entity\User;
 use App\Repository\BillingSettingsRepository;
 use App\Repository\PlanRepository;
@@ -11,6 +13,7 @@ use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
 use App\Service\Billing\SubscriptionManager;
 use App\Service\Stripe\StripeService;
+use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Subscription as StripeSubscription;
@@ -225,6 +228,59 @@ final class BillingController extends AbstractController
 
         $request->getSession()->remove('billing.pending_plan');
         $this->addFlash('success', 'Your subscription is now active. Welcome!');
+
+        return $this->redirectToRoute('app_dashboard');
+    }
+
+    #[Route('/select-free', name: 'billing_select_free', methods: ['POST'])]
+    public function selectFree(
+        Request $request,
+        PlanRepository $planRepository,
+        SubscriptionRepository $subscriptionRepository,
+        EntityManagerInterface $em,
+        AuditLogger $auditLogger,
+    ): Response {
+        if (!$this->isCsrfTokenValid('billing_select_free', $request->getPayload()->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        $org = $user->getOrganization();
+
+        if ($org === null) {
+            return $this->redirectToRoute('onboarding_org');
+        }
+
+        $freePlan = $planRepository->findOneBy(['isFree' => true, 'isActive' => true]);
+        if ($freePlan === null) {
+            $this->addFlash('error', 'Free plan not found.');
+
+            return $this->redirectToRoute('billing_plans');
+        }
+
+        $existing = $subscriptionRepository->findForOrg($org);
+        if ($existing !== null) {
+            $this->addFlash('info', 'You already have an active subscription.');
+
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $subscription = new Subscription($org, $freePlan, SubscriptionStatus::Active);
+        $em->persist($subscription);
+        $em->flush();
+
+        $auditLogger->logBillingEvent(
+            'subscription.created',
+            $org->getId()->toRfc4122(),
+            'organization',
+            null,
+            ['status' => SubscriptionStatus::Active->value, 'plan' => $freePlan->getSlug()],
+            $user->getId()->toRfc4122(),
+        );
+
+        $request->getSession()->remove('billing.pending_plan');
+        $this->addFlash('success', 'Welcome! You\'re on the free plan.');
 
         return $this->redirectToRoute('app_dashboard');
     }
