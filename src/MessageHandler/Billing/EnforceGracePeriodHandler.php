@@ -9,6 +9,7 @@ use App\Message\Billing\EnforceGracePeriodMessage;
 use App\Repository\BillingSettingsRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\EntitlementService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -21,6 +22,7 @@ final class EnforceGracePeriodHandler
         private readonly BillingSettingsRepository $billingSettingsRepository,
         private readonly EntityManagerInterface $em,
         private readonly AuditLogger $auditLogger,
+        private readonly EntitlementService $entitlementService,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -54,5 +56,9 @@ final class EnforceGracePeriodHandler
         }
 
         $this->em->flush();
+
+        foreach ($pastGrace as $subscription) {
+            $this->entitlementService->invalidateForOrg($subscription->getOrganization());
+        }
     }
 }
