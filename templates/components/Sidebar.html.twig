@@ -21,6 +21,11 @@
                            {{ cr starts with 'admin_users' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
                         Users
                     </a>
+                    <a href="{{ path('admin_orgs_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_orgs' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Organizations
+                    </a>
                 </div>
 
                 <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">Billing</p>
