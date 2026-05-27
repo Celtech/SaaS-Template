@@ -15,6 +15,7 @@ use App\Service\Billing\SubscriptionManager;
 use App\Service\Stripe\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Subscription as StripeSubscription;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,10 @@ use Symfony\Component\Uid\Uuid;
 #[Route('/billing')]
 final class BillingController extends AbstractController
 {
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
+
     #[Route('/plans', name: 'billing_plans', methods: ['GET'])]
     public function plans(
         Request $request,
@@ -151,7 +156,11 @@ final class BillingController extends AbstractController
                 $user->getId()->toRfc4122(),
             );
         } catch (ApiErrorException $e) {
-            $this->addFlash('error', 'Could not start checkout: ' . $e->getMessage());
+            $this->logger->error('stripe.checkout: failed to create checkout session', [
+                'error' => $e->getMessage(),
+                'org_id' => $org->getId()->toRfc4122(),
+            ]);
+            $this->addFlash('error', 'Could not start checkout. Please try again or contact support.');
 
             return $this->redirectToRoute('billing_plans');
         }
@@ -344,11 +353,15 @@ final class BillingController extends AbstractController
                 $org->getId()->toRfc4122(),
                 'organization',
                 null,
-                null,
+                ['portal_session_id' => $portalSession->id],
                 $user->getId()->toRfc4122(),
             );
         } catch (ApiErrorException $e) {
-            $this->addFlash('error', 'Could not open billing portal: ' . $e->getMessage());
+            $this->logger->error('stripe.portal: failed to create portal session', [
+                'error' => $e->getMessage(),
+                'org_id' => $org->getId()->toRfc4122(),
+            ]);
+            $this->addFlash('error', 'Could not open billing portal. Please try again or contact support.');
 
             return $this->redirectToRoute('billing_reactivate');
         }

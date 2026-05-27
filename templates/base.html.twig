@@ -6,14 +6,15 @@
     <title>{% block title %}{% endblock %} - {{ app_name|default('SaaS Template') }}</title>
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
     {% block stylesheets %}{% endblock %}
+    {% set cspNonce = app.request.attributes.get('csp_nonce') %}
     {% block javascripts %}
-        {% block importmap %}{{ importmap('app') }}{% endblock %}
+        {% block importmap %}{{ importmap('app', {nonce: cspNonce}) }}{% endblock %}
     {% endblock %}
     {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
     {% if frankenphpHotReload %}
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        <script src="https://cdn.jsdelivr.net/npm/idiomorph" nonce="{{ cspNonce }}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module" nonce="{{ cspNonce }}"></script>
     {% endif %}
 </head>
 <body class="min-h-screen bg-background font-sans antialiased">

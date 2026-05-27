@@ -9,6 +9,7 @@ use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
 use App\Service\Billing\SubscriptionManager;
 use App\Service\Stripe\StripeService;
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Stripe\Event;
 use Stripe\Exception\ApiErrorException;
@@ -17,6 +18,7 @@ use Stripe\Invoice;
 use Stripe\Subscription as StripeSubscription;
 use Stripe\Webhook;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,6 +35,8 @@ final class StripeWebhookController extends AbstractController
         private readonly StripeService $stripeService,
         private readonly AuditLogger $auditLogger,
         private readonly LoggerInterface $logger,
+        #[Target('cache.stripe_webhooks')]
+        private readonly CacheItemPoolInterface $eventCache,
     ) {
     }
 
@@ -49,6 +53,13 @@ final class StripeWebhookController extends AbstractController
             return new Response('Invalid payload', Response::HTTP_BAD_REQUEST);
         }
 
+        // Idempotency: skip events already processed within Stripe's retry window (7-day TTL).
+        $cacheKey = 'stripe_event_' . strtr($event->id, ['-' => '_', '.' => '_']);
+        $cacheItem = $this->eventCache->getItem($cacheKey);
+        if ($cacheItem->isHit()) {
+            return new Response('OK', Response::HTTP_OK);
+        }
+
         match ($event->type) {
             Event::CUSTOMER_SUBSCRIPTION_UPDATED => $this->handleSubscriptionUpdated($event),
             Event::CUSTOMER_SUBSCRIPTION_DELETED => $this->handleSubscriptionDeleted($event),
@@ -56,6 +67,9 @@ final class StripeWebhookController extends AbstractController
             Event::INVOICE_PAYMENT_FAILED => $this->handleInvoicePaymentFailed($event),
             default => null,
         };
+
+        $cacheItem->set(true);
+        $this->eventCache->save($cacheItem);
 
         return new Response('OK', Response::HTTP_OK);
     }
@@ -72,6 +86,13 @@ final class StripeWebhookController extends AbstractController
             $this->logger->warning('stripe.webhook: subscription.updated for unknown subscription', [
                 'stripe_subscription_id' => $stripeSubscription->id,
             ]);
+            $this->auditLogger->logBillingEvent(
+                'subscription.updated.unmatched',
+                $stripeSubscription->id,
+                'stripe_subscription',
+                null,
+                ['event_id' => $event->id, 'status' => $stripeSubscription->status],
+            );
 
             return;
         }
@@ -115,6 +136,13 @@ final class StripeWebhookController extends AbstractController
             $this->logger->warning('stripe.webhook: subscription.deleted for unknown subscription', [
                 'stripe_subscription_id' => $stripeSubscription->id,
             ]);
+            $this->auditLogger->logBillingEvent(
+                'subscription.deleted.unmatched',
+                $stripeSubscription->id,
+                'stripe_subscription',
+                null,
+                ['event_id' => $event->id],
+            );
 
             return;
         }
@@ -128,6 +156,14 @@ final class StripeWebhookController extends AbstractController
             $subscription->getPlan(),
             $stripeSubscription,
             $stripeCustomerId,
+        );
+
+        $this->auditLogger->logBillingEvent(
+            'subscription.canceled',
+            $subscription->getOrganization()->getId()->toRfc4122(),
+            'organization',
+            ['status' => $subscription->getStatus()->value],
+            ['stripe_subscription_id' => $stripeSubscription->id],
         );
     }
 
