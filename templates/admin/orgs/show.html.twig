@@ -1,0 +1,153 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Org: {{ org.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <div class="flex items-center gap-3">
+            <a href="{{ path('admin_orgs_index') }}" class="text-sm text-muted-foreground hover:text-foreground">Organizations</a>
+            <span class="text-muted-foreground">/</span>
+            <h1 class="text-2xl font-semibold text-foreground">{{ org.name }}</h1>
+        </div>
+        <p class="mt-1 text-sm text-muted-foreground font-mono">{{ org.id }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {# Org info #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Organization</h2>
+            </div>
+            <dl class="divide-y text-sm">
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Name</dt>
+                    <dd class="font-medium text-foreground">{{ org.name }}</dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Owner</dt>
+                    <dd>
+                        <a href="{{ path('admin_users_show', {id: org.owner.id}) }}" class="text-foreground hover:underline">{{ org.owner.email }}</a>
+                    </dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Created</dt>
+                    <dd class="text-foreground">{{ org.createdAt|date('Y-m-d H:i') }} UTC</dd>
+                </div>
+            </dl>
+        </div>
+
+        {# Subscription info #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Subscription</h2>
+            </div>
+            {% if subscription %}
+            <dl class="divide-y text-sm">
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Plan</dt>
+                    <dd class="font-medium text-foreground">{{ subscription.plan.name }}</dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Status</dt>
+                    <dd>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                            {{ subscription.status.value in ['active', 'trialing'] ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground' }}">
+                            {{ subscription.status.value|replace({'_': ' '})|capitalize }}
+                        </span>
+                    </dd>
+                </div>
+                {% if subscription.trialEndsAt %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Trial ends</dt>
+                    <dd class="text-foreground">{{ subscription.trialEndsAt|date('Y-m-d') }}</dd>
+                </div>
+                {% endif %}
+                {% if subscription.currentPeriodEnd %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Period ends</dt>
+                    <dd class="text-foreground">{{ subscription.currentPeriodEnd|date('Y-m-d') }}</dd>
+                </div>
+                {% endif %}
+                {% if subscription.stripeCustomerId %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Stripe customer</dt>
+                    <dd class="font-mono text-xs text-muted-foreground">{{ subscription.stripeCustomerId }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+            {% else %}
+            <div class="px-4 py-8 text-center text-sm text-muted-foreground">No subscription found.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Members #}
+    <div class="rounded-lg border bg-card">
+        <div class="border-b px-4 py-3">
+            <h2 class="font-medium text-foreground">Members ({{ members|length }})</h2>
+        </div>
+        {% if members %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for member in members %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-3 text-foreground">
+                        {{ member.email }}
+                        {% if member.id == org.owner.id %}
+                            <span class="ml-1 text-xs text-muted-foreground">(owner)</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground">{{ member.name ?: '—' }}</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if member.suspended %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Suspended</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ path('admin_users_show', {id: member.id}) }}" class="text-xs text-muted-foreground hover:text-foreground">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="px-4 py-8 text-center text-sm text-muted-foreground">No members found.</div>
+        {% endif %}
+    </div>
+
+    {# Billing activity #}
+    {% if auditLogs %}
+    <div class="rounded-lg border bg-card">
+        <div class="border-b px-4 py-3">
+            <h2 class="font-medium text-foreground">Billing activity</h2>
+        </div>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">When</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for entry in auditLogs %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ entry.action }}</td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ entry.createdAt|date('Y-m-d H:i') }} UTC</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
