@@ -55,6 +55,7 @@ final class ImpersonationController extends AbstractController
                 'admin_id' => $admin->getId()->toRfc4122(),
                 'target_user_id' => $user->getId()->toRfc4122(),
                 'target_user_email' => $user->getEmail(),
+                'return_url' => $this->generateUrl('admin_users_show', ['id' => $user->getId()]),
             ]);
 
             return $this->redirect('/?_switch_user=' . urlencode($user->getEmail()));
