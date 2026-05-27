@@ -8,8 +8,10 @@ use App\Repository\PlanRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
 use App\Service\Billing\SubscriptionManager;
+use App\Service\Stripe\StripeService;
 use Psr\Log\LoggerInterface;
 use Stripe\Event;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Invoice;
 use Stripe\Subscription as StripeSubscription;
@@ -28,6 +30,7 @@ final class StripeWebhookController extends AbstractController
         private readonly SubscriptionManager $subscriptionManager,
         private readonly SubscriptionRepository $subscriptionRepository,
         private readonly PlanRepository $planRepository,
+        private readonly StripeService $stripeService,
         private readonly AuditLogger $auditLogger,
         private readonly LoggerInterface $logger,
     ) {
@@ -71,6 +74,17 @@ final class StripeWebhookController extends AbstractController
             ]);
 
             return;
+        }
+
+        // Fetch a fresh copy with latest_invoice expanded so SubscriptionManager can
+        // derive currentPeriodEnd on Stripe API versions that omit current_period_end.
+        try {
+            $stripeSubscription = $this->stripeService->retrieveSubscription($stripeSubscription->id);
+        } catch (ApiErrorException $e) {
+            $this->logger->warning('stripe.webhook: could not re-fetch subscription', [
+                'stripe_subscription_id' => $stripeSubscription->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         $planId = $stripeSubscription->metadata['plan_id'] ?? null;

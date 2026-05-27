@@ -170,7 +170,7 @@ final class StripeService
     {
         return $this->stripe->checkout->sessions->retrieve(
             $sessionId,
-            ['expand' => ['subscription']],
+            ['expand' => ['subscription', 'subscription.latest_invoice']],
         );
     }
 
@@ -181,7 +181,10 @@ final class StripeService
      */
     public function retrieveSubscription(string $stripeSubscriptionId): StripeSubscription
     {
-        return $this->stripe->subscriptions->retrieve($stripeSubscriptionId);
+        return $this->stripe->subscriptions->retrieve(
+            $stripeSubscriptionId,
+            ['expand' => ['latest_invoice']],
+        );
     }
 
     /**
