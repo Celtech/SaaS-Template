@@ -1,0 +1,95 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Users{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-foreground">Users</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ total }} user{{ total != 1 ? 's' : '' }} registered.</p>
+        </div>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="q" value="{{ search }}" placeholder="Search by email or name…"
+               class="flex-1 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Search</button>
+        {% if search %}
+            <a href="{{ path('admin_users_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="rounded-lg border bg-card">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Organization</th>
+                    <th class="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Registered</th>
+                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for user in users %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-3 font-medium text-foreground">
+                        <a href="{{ path('admin_users_show', {id: user.id}) }}" class="hover:underline">{{ user.email }}</a>
+                    </td>
+                    <td class="px-4 py-3 text-muted-foreground">{{ user.name }}</td>
+                    <td class="px-4 py-3 text-muted-foreground text-xs">
+                        {{ user.organization ? user.organization.name : '—' }}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if user.deleted %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive">Deleted</span>
+                        {% elseif user.suspended %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Suspended</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-muted-foreground">{{ user.createdAt|date('Y-m-d') }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ path('admin_users_show', {id: user.id}) }}" class="text-xs text-muted-foreground hover:text-foreground">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No users found{% if search %} matching "{{ search }}"{% endif %}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if totalPages > 1 %}
+    <div class="flex items-center justify-between text-sm">
+        <p class="text-muted-foreground">
+            Showing {{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} of {{ total }}
+        </p>
+        <div class="flex gap-2">
+            {% if page > 1 %}
+                <a href="{{ path('admin_users_index', {page: page - 1, q: search}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Previous</a>
+            {% endif %}
+            {% if page < totalPages %}
+                <a href="{{ path('admin_users_index', {page: page + 1, q: search}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

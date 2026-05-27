@@ -13,6 +13,16 @@
         {% if admin %}
             {% block admin_nav %}
                 {% set cr = app.request.attributes.get('_route') %}
+
+                <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">People</p>
+                <div class="space-y-1 mb-4">
+                    <a href="{{ path('admin_users_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_users' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Users
+                    </a>
+                </div>
+
                 <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">Billing</p>
                 <div class="space-y-1 mb-4">
                     <a href="{{ path('admin_plans_index') }}"
