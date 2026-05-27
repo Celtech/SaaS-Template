@@ -29,9 +29,12 @@ security:
                 lifetime: 2592000
                 path: /
             entry_point: App\Security\AppAuthenticator
+            switch_user:
+                role: ROLE_ALLOWED_TO_SWITCH
+                parameter: _switch_user
 
     role_hierarchy:
-        ROLE_SUPER_ADMIN: [ROLE_USER]
+        ROLE_SUPER_ADMIN: [ROLE_USER, ROLE_ALLOWED_TO_SWITCH]
 
     access_control:
         - { path: ^/health, roles: PUBLIC_ACCESS }

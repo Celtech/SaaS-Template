@@ -1,0 +1,111 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Billing Settings{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Billing Settings</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Configure trial, grace period, and subscription defaults.</p>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="rounded-md bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-400">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">{{ message }}</div>
+    {% endfor %}
+
+    <form method="POST" action="{{ path('admin_billing_settings') }}" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('billing_settings') }}">
+
+        {# Trial settings #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Trial</h2>
+            </div>
+            <div class="divide-y">
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="trial_enabled" class="text-sm font-medium text-foreground">Enable trials</label>
+                        <p class="text-xs text-muted-foreground mt-0.5">New signups receive a trial period before requiring payment.</p>
+                    </div>
+                    <input type="hidden" name="trial_enabled" value="0">
+                    <input type="checkbox" id="trial_enabled" name="trial_enabled" value="1"
+                           {{ settings.trialEnabled ? 'checked' : '' }}
+                           class="h-4 w-4 rounded border-border text-primary focus:ring-ring">
+                </div>
+
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="trial_days" class="text-sm font-medium text-foreground">Trial length (days)</label>
+                    </div>
+                    <input type="number" id="trial_days" name="trial_days" min="1" max="365"
+                           value="{{ settings.trialDays }}"
+                           class="w-24 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                </div>
+
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="trial_expiry_behavior" class="text-sm font-medium text-foreground">Expiry behavior</label>
+                        <p class="text-xs text-muted-foreground mt-0.5">What happens when a trial expires without a paid subscription.</p>
+                    </div>
+                    <select id="trial_expiry_behavior" name="trial_expiry_behavior"
+                            class="rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                        {% for behavior in behaviors %}
+                            <option value="{{ behavior.value }}" {{ settings.trialExpiryBehavior == behavior ? 'selected' : '' }}>
+                                {{ behavior.value|replace({'_': ' '})|capitalize }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="default_trial_plan_slug" class="text-sm font-medium text-foreground">Default trial plan slug</label>
+                        <p class="text-xs text-muted-foreground mt-0.5">Plan slug given to new signups. Leave blank for no automatic trial plan.</p>
+                    </div>
+                    <input type="text" id="default_trial_plan_slug" name="default_trial_plan_slug"
+                           value="{{ settings.defaultTrialPlanSlug ?: '' }}"
+                           placeholder="e.g. pro"
+                           class="w-40 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                </div>
+            </div>
+        </div>
+
+        {# Payment settings #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Payment</h2>
+            </div>
+            <div class="divide-y">
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="require_credit_card" class="text-sm font-medium text-foreground">Require credit card at signup</label>
+                        <p class="text-xs text-muted-foreground mt-0.5">Collect a card via Stripe Checkout before the trial begins.</p>
+                    </div>
+                    <input type="hidden" name="require_credit_card" value="0">
+                    <input type="checkbox" id="require_credit_card" name="require_credit_card" value="1"
+                           {{ settings.requireCreditCard ? 'checked' : '' }}
+                           class="h-4 w-4 rounded border-border text-primary focus:ring-ring">
+                </div>
+
+                <div class="flex items-center justify-between px-4 py-4">
+                    <div>
+                        <label for="grace_period_days" class="text-sm font-medium text-foreground">Grace period (days)</label>
+                        <p class="text-xs text-muted-foreground mt-0.5">Days after a failed payment before hard-blocking access.</p>
+                    </div>
+                    <input type="number" id="grace_period_days" name="grace_period_days" min="0" max="30"
+                           value="{{ settings.gracePeriodDays }}"
+                           class="w-24 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                Save settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

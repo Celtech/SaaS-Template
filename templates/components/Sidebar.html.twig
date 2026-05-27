@@ -40,6 +40,20 @@
                            {{ cr starts with 'admin_entitlements' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
                         Entitlements
                     </a>
+                    <a href="{{ path('admin_billing_settings') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr == 'admin_billing_settings' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Settings
+                    </a>
+                </div>
+
+                <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">System</p>
+                <div class="space-y-1 mb-4">
+                    <a href="{{ path('admin_audit_log_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_audit_log' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Audit Log
+                    </a>
                 </div>
             {% endblock %}
         {% else %}
