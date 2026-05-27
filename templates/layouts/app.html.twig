@@ -1,10 +1,34 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
+{% set banner = trial_banner() %}
 <div class="flex h-screen overflow-hidden bg-background">
     <twig:Sidebar />
     <div class="flex flex-1 flex-col overflow-hidden">
         <twig:Topbar />
+
+        {% if banner %}
+            {% if banner.expired %}
+                <div class="flex shrink-0 items-center justify-between gap-4 bg-destructive px-6 py-2.5 text-sm text-destructive-foreground">
+                    <p class="font-medium">Your free trial has expired.</p>
+                    <a href="{{ path('org_settings_billing') }}"
+                       class="shrink-0 rounded-md border border-destructive-foreground/30 px-3 py-1 text-xs font-medium hover:bg-destructive-foreground/10">
+                        {{ banner.has_stripe ? 'Manage billing' : 'Add payment method' }}
+                    </a>
+                </div>
+            {% else %}
+                <div class="flex shrink-0 items-center justify-between gap-4 bg-amber-500 px-6 py-2.5 text-sm text-white">
+                    <p class="font-medium">
+                        Your free trial ends in <strong>{{ banner.days_left }} day{{ banner.days_left != 1 ? 's' : '' }}</strong>.
+                    </p>
+                    <a href="{{ path('org_settings_billing') }}"
+                       class="shrink-0 rounded-md border border-white/30 px-3 py-1 text-xs font-medium hover:bg-white/10">
+                        {{ banner.has_stripe ? 'Manage billing' : 'Add payment method' }}
+                    </a>
+                </div>
+            {% endif %}
+        {% endif %}
+
         <main class="flex-1 overflow-y-auto px-6 py-8">
             {% block main %}{% endblock %}
         </main>
