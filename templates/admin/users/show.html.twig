@@ -1,0 +1,181 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}User: {{ user.email }}{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3">
+                <a href="{{ path('admin_users_index') }}" class="text-sm text-muted-foreground hover:text-foreground">Users</a>
+                <span class="text-muted-foreground">/</span>
+                <h1 class="text-2xl font-semibold text-foreground">{{ user.name ?: user.email }}</h1>
+                {% if user.deleted %}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-destructive/10 text-destructive">Deleted</span>
+                {% elseif user.suspended %}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Suspended</span>
+                {% else %}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                {% endif %}
+            </div>
+            <p class="mt-1 text-sm text-muted-foreground">{{ user.email }}</p>
+        </div>
+
+        {% if not user.deleted %}
+        <div class="flex gap-2">
+            {% if user.suspended %}
+                <form method="POST" action="{{ path('admin_users_unsuspend', {id: user.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('user_unsuspend_' ~ user.id) }}">
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/50">
+                        Unsuspend
+                    </button>
+                </form>
+            {% else %}
+                <form method="POST" action="{{ path('admin_users_suspend', {id: user.id}) }}"
+                      onsubmit="return confirm('Suspend {{ user.email }}? They will lose access immediately.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('user_suspend_' ~ user.id) }}">
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
+                        Suspend
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm {{ type == 'error' ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {# Account info #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Account</h2>
+            </div>
+            <dl class="divide-y text-sm">
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Email</dt>
+                    <dd class="font-medium text-foreground">{{ user.email }}</dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Name</dt>
+                    <dd class="text-foreground">{{ user.name ?: '—' }}</dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Email verified</dt>
+                    <dd class="text-foreground">
+                        {% if user.emailVerifiedAt %}
+                            {{ user.emailVerifiedAt|date('Y-m-d H:i') }} UTC
+                        {% else %}
+                            <span class="text-amber-600 dark:text-amber-400">Not verified</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">2FA</dt>
+                    <dd class="text-foreground">
+                        {% if user.totpAuthenticationEnabled or user.emailAuthEnabled %}
+                            <span class="text-green-700 dark:text-green-400">Enabled</span>
+                        {% else %}
+                            <span class="text-muted-foreground">Disabled</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Registered</dt>
+                    <dd class="text-foreground">{{ user.createdAt|date('Y-m-d H:i') }} UTC</dd>
+                </div>
+                {% if user.suspendedAt %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Suspended at</dt>
+                    <dd class="text-foreground">{{ user.suspendedAt|date('Y-m-d H:i') }} UTC</dd>
+                </div>
+                {% endif %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">User ID</dt>
+                    <dd class="font-mono text-xs text-muted-foreground">{{ user.id }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        {# Subscription info #}
+        <div class="rounded-lg border bg-card">
+            <div class="border-b px-4 py-3">
+                <h2 class="font-medium text-foreground">Subscription</h2>
+            </div>
+            {% if subscription %}
+            <dl class="divide-y text-sm">
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Plan</dt>
+                    <dd class="font-medium text-foreground">{{ subscription.plan.name }}</dd>
+                </div>
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Status</dt>
+                    <dd>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                            {{ subscription.status.value in ['active', 'trialing'] ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground' }}">
+                            {{ subscription.status.value|replace({'_': ' '})|capitalize }}
+                        </span>
+                    </dd>
+                </div>
+                {% if subscription.trialEndsAt %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Trial ends</dt>
+                    <dd class="text-foreground">{{ subscription.trialEndsAt|date('Y-m-d') }}</dd>
+                </div>
+                {% endif %}
+                {% if subscription.currentPeriodEnd %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Current period ends</dt>
+                    <dd class="text-foreground">{{ subscription.currentPeriodEnd|date('Y-m-d') }}</dd>
+                </div>
+                {% endif %}
+                {% if subscription.stripeCustomerId %}
+                <div class="flex justify-between px-4 py-3">
+                    <dt class="text-muted-foreground">Stripe customer</dt>
+                    <dd class="font-mono text-xs text-muted-foreground">{{ subscription.stripeCustomerId }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+            {% else %}
+            <div class="px-4 py-8 text-center text-sm text-muted-foreground">No subscription found.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Recent audit log #}
+    <div class="rounded-lg border bg-card">
+        <div class="border-b px-4 py-3">
+            <h2 class="font-medium text-foreground">Recent activity</h2>
+        </div>
+        {% if auditLogs %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">IP</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">When</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for entry in auditLogs %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ entry.action }}</td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ entry.ipAddress ?? '—' }}</td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ entry.createdAt|date('Y-m-d H:i') }} UTC</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="px-4 py-8 text-center text-sm text-muted-foreground">No activity recorded.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

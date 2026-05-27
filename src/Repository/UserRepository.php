@@ -37,6 +37,38 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $this->findOneBy(['email' => strtolower(trim($email))]);
     }
 
+    /**
+     * Returns users matching an optional email/name search string, newest first.
+     *
+     * @return User[]
+     */
+    public function findWithSearch(?string $search, int $page = 1, int $perPage = 50): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->orderBy('u.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage);
+
+        if ($search !== null && $search !== '') {
+            $qb->where('u.email LIKE :q OR u.name LIKE :q')
+                ->setParameter('q', '%' . $search . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countWithSearch(?string $search): int
+    {
+        $qb = $this->createQueryBuilder('u')->select('COUNT(u.id)');
+
+        if ($search !== null && $search !== '') {
+            $qb->where('u.email LIKE :q OR u.name LIKE :q')
+                ->setParameter('q', '%' . $search . '%');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
     /** @return User[] */
     public function findByOrganization(Organization $org): array
     {
