@@ -38,6 +38,14 @@ services:
         arguments:
             $secret: '%plan_token.secret%'
 
+    _instanceof:
+        App\Security\Enforcement\SecurityEnforcementInterface:
+            tags: ['app.security_enforcement']
+
+    App\EventSubscriber\SecurityEnforcementSubscriber:
+        arguments:
+            $enforcements: !tagged_iterator app.security_enforcement
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 

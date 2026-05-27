@@ -28,6 +28,7 @@ class LogoutEventListener
             return;
         }
 
-        $this->auditLogger->logAuth('logout', $user->getId()->toRfc4122());
+        $isAdmin = \in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true);
+        $this->auditLogger->logAuth('logout', $user->getId()->toRfc4122(), $isAdmin ? 'admin_user' : 'user');
     }
 }
