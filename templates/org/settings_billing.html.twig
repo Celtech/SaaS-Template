@@ -162,18 +162,18 @@
                         </div>
                         <div class="flex items-center gap-4 shrink-0">
                             <span class="text-sm font-medium text-foreground">
-                                ${{ (invoice.amountPaid / 100)|number_format(2) }}
+                                ${{ (invoice.amount_paid / 100)|number_format(2) }}
                             </span>
-                            {% if invoice.hostedInvoiceUrl %}
-                                <a href="{{ invoice.hostedInvoiceUrl }}"
+                            {% if invoice.hosted_invoice_url %}
+                                <a href="{{ invoice.hosted_invoice_url }}"
                                    target="_blank"
                                    rel="noopener noreferrer"
                                    class="text-xs text-primary hover:underline">
                                     View
                                 </a>
                             {% endif %}
-                            {% if invoice.invoicePdf %}
-                                <a href="{{ invoice.invoicePdf }}"
+                            {% if invoice.invoice_pdf %}
+                                <a href="{{ invoice.invoice_pdf }}"
                                    target="_blank"
                                    rel="noopener noreferrer"
                                    class="text-xs text-muted-foreground hover:text-foreground">
