@@ -353,7 +353,7 @@ final class BillingController extends AbstractController
                 $org->getId()->toRfc4122(),
                 'organization',
                 null,
-                null,
+                ['portal_session_id' => $portalSession->id],
                 $user->getId()->toRfc4122(),
             );
         } catch (ApiErrorException $e) {
