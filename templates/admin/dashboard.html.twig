@@ -26,6 +26,14 @@
             <h2 class="font-medium text-foreground">Entitlements</h2>
             <p class="mt-1 text-sm text-muted-foreground">Define feature flags and limits assigned to plans.</p>
         </a>
+        <a href="{{ path('admin_billing_settings') }}" class="rounded-lg border bg-card p-5 hover:bg-accent/30 transition-colors">
+            <h2 class="font-medium text-foreground">Billing Settings</h2>
+            <p class="mt-1 text-sm text-muted-foreground">Configure trial periods, grace periods, and signup defaults.</p>
+        </a>
+        <a href="{{ path('admin_audit_log_index') }}" class="rounded-lg border bg-card p-5 hover:bg-accent/30 transition-colors">
+            <h2 class="font-medium text-foreground">Audit Log</h2>
+            <p class="mt-1 text-sm text-muted-foreground">Browse all recorded admin and billing events.</p>
+        </a>
     </div>
 </div>
 {% endblock %}

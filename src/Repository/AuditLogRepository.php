@@ -64,4 +64,39 @@ class AuditLogRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return AuditLog[]
+     */
+    public function findFiltered(?string $action, ?string $actorId, int $page = 1, int $perPage = 50): array
+    {
+        $qb = $this->createQueryBuilder('a')->orderBy('a.createdAt', 'DESC');
+
+        if ($action !== null) {
+            $qb->andWhere('a.action LIKE :action')->setParameter('action', $action . '%');
+        }
+        if ($actorId !== null) {
+            $qb->andWhere('a.actorId = :actorId')->setParameter('actorId', $actorId);
+        }
+
+        return $qb
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countFiltered(?string $action, ?string $actorId): int
+    {
+        $qb = $this->createQueryBuilder('a')->select('COUNT(a.id)');
+
+        if ($action !== null) {
+            $qb->andWhere('a.action LIKE :action')->setParameter('action', $action . '%');
+        }
+        if ($actorId !== null) {
+            $qb->andWhere('a.actorId = :actorId')->setParameter('actorId', $actorId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
 }

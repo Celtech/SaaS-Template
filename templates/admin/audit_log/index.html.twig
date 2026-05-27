@@ -1,0 +1,71 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Audit Log{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Audit Log</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ total }} event{{ total != 1 ? 's' : '' }} recorded.</p>
+    </div>
+
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="action" value="{{ action }}" placeholder="Filter by action prefix…"
+               class="flex-1 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <input type="text" name="actor" value="{{ actor }}" placeholder="Actor UUID…"
+               class="w-72 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Filter</button>
+        {% if action or actor %}
+            <a href="{{ path('admin_audit_log_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="rounded-lg border bg-card">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Actor</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Subject</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">When</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for entry in entries %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ entry.action }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">{{ entry.actorId ?: '—' }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                        {% if entry.subjectType %}{{ entry.subjectType }}:{% endif %}{{ entry.subjectId ?: '—' }}
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{{ entry.createdAt|date('Y-m-d H:i:s') }} UTC</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No audit log entries found{% if action or actor %} matching the current filter{% endif %}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if totalPages > 1 %}
+    <div class="flex items-center justify-between text-sm">
+        <p class="text-muted-foreground">
+            Showing {{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} of {{ total }}
+        </p>
+        <div class="flex gap-2">
+            {% if page > 1 %}
+                <a href="{{ path('admin_audit_log_index', {page: page - 1, action: action, actor: actor}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Previous</a>
+            {% endif %}
+            {% if page < totalPages %}
+                <a href="{{ path('admin_audit_log_index', {page: page + 1, action: action, actor: actor}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
