@@ -105,6 +105,50 @@ final class SecurityHeadersListenerTest extends UnitTestCase
     }
 
     #[Test]
+    public function scriptSrcContainsNonceWhenSetOnRequest(): void
+    {
+        $request = new Request();
+        $request->attributes->set('csp_nonce', 'abc123testNonce==');
+
+        $response = $this->dispatchMainRequest($request);
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("'nonce-abc123testNonce=='", (string) $csp);
+    }
+
+    #[Test]
+    public function scriptSrcDoesNotContainUnsafeInlineWhenNonceIsPresent(): void
+    {
+        $request = new Request();
+        $request->attributes->set('csp_nonce', 'abc123testNonce==');
+
+        $response = $this->dispatchMainRequest($request);
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $scriptSrc = $this->extractDirective((string) $csp, 'script-src');
+        $this->assertStringNotContainsString("'unsafe-inline'", $scriptSrc);
+    }
+
+    #[Test]
+    public function scriptSrcDoesNotContainUnsafeEval(): void
+    {
+        $response = $this->dispatchMainRequest(new Request());
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringNotContainsString("'unsafe-eval'", (string) $csp);
+    }
+
+    #[Test]
+    public function scriptSrcWithoutNonceStillContainsSelf(): void
+    {
+        $response = $this->dispatchMainRequest(new Request());
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $scriptSrc = $this->extractDirective((string) $csp, 'script-src');
+        $this->assertStringContainsString("'self'", $scriptSrc);
+    }
+
+    #[Test]
     public function subRequestsAreSkipped(): void
     {
         $request = new Request();
@@ -144,5 +188,17 @@ final class SecurityHeadersListenerTest extends UnitTestCase
         $this->listener->__invoke($event);
 
         return $response;
+    }
+
+    private function extractDirective(string $csp, string $directive): string
+    {
+        foreach (explode(';', $csp) as $part) {
+            $part = trim($part);
+            if (str_starts_with($part, $directive . ' ')) {
+                return $part;
+            }
+        }
+
+        return '';
     }
 }
