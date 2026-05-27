@@ -21,3 +21,11 @@ framework:
                 adapter: cache.adapter.redis
                 provider: '%env(REDIS_DSN)%'
                 default_lifetime: 604800
+
+when@test:
+    framework:
+        cache:
+            pools:
+                cache.stripe_webhooks:
+                    adapter: cache.adapter.array
+                    provider: ~
