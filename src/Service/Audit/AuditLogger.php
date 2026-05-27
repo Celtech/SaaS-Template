@@ -102,6 +102,7 @@ class AuditLogger
         string $actorId,
         string $targetUserId,
         ?string $impersonationSessionId = null,
+        ?string $reason = null,
     ): void {
         $this->write(
             'impersonation.' . $action,
@@ -110,7 +111,7 @@ class AuditLogger
             $targetUserId,
             'user',
             null,
-            null,
+            $reason !== null ? ['reason' => $reason] : null,
             $impersonationSessionId,
         );
     }
@@ -157,6 +158,14 @@ class AuditLogger
         ?string $impersonationSessionId = null,
     ): void {
         $request = $this->requestStack->getCurrentRequest();
+
+        // Auto-attach impersonation session to every log entry written during an impersonation session.
+        if ($impersonationSessionId === null && $request !== null && $request->hasSession()) {
+            $sid = $request->getSession()->get('_impersonation_session_id');
+            if (\is_string($sid)) {
+                $impersonationSessionId = $sid;
+            }
+        }
 
         $this->connection->insert('audit_log', [
             'id' => Uuid::v7()->toRfc4122(),

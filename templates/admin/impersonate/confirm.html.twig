@@ -1,0 +1,82 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Impersonate: {{ targetUser.email }}{% endblock %}
+
+{% block admin_content %}
+<div class="mx-auto max-w-lg space-y-6">
+    <div>
+        <div class="flex items-center gap-3">
+            <a href="{{ path('admin_users_show', {id: targetUser.id}) }}" class="text-sm text-muted-foreground hover:text-foreground">{{ targetUser.email }}</a>
+            <span class="text-muted-foreground">/</span>
+            <h1 class="text-2xl font-semibold text-foreground">Impersonate</h1>
+        </div>
+        <p class="mt-1 text-sm text-muted-foreground">You are about to access this account as the user.</p>
+    </div>
+
+    {% for message in app.flashes('error') %}
+        <div class="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
+    {% endfor %}
+
+    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-800 dark:bg-amber-900/20">
+        <div class="flex gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div class="text-sm text-amber-800 dark:text-amber-300">
+                <p class="font-semibold">All actions are logged</p>
+                <p class="mt-1">Every action you take while impersonating this user will be recorded in the audit log, attributed to your admin account, and linked to this session. This session is subject to SOC2 and PCI DSS access review.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-lg border bg-card">
+        <div class="border-b px-4 py-3">
+            <h2 class="font-medium text-foreground">Target account</h2>
+        </div>
+        <dl class="divide-y text-sm">
+            <div class="flex justify-between px-4 py-3">
+                <dt class="text-muted-foreground">Email</dt>
+                <dd class="font-medium text-foreground">{{ targetUser.email }}</dd>
+            </div>
+            <div class="flex justify-between px-4 py-3">
+                <dt class="text-muted-foreground">Name</dt>
+                <dd class="text-foreground">{{ targetUser.name ?: '—' }}</dd>
+            </div>
+            {% if targetUser.organization %}
+            <div class="flex justify-between px-4 py-3">
+                <dt class="text-muted-foreground">Organization</dt>
+                <dd class="text-foreground">{{ targetUser.organization.name }}</dd>
+            </div>
+            {% endif %}
+            <div class="flex justify-between px-4 py-3">
+                <dt class="text-muted-foreground">User ID</dt>
+                <dd class="font-mono text-xs text-muted-foreground">{{ targetUser.id }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <form method="POST" action="{{ path('admin_impersonate_confirm', {id: targetUser.id}) }}" class="space-y-4">
+        <input type="hidden" name="_token" value="{{ csrf_token('impersonate_' ~ targetUser.id) }}">
+
+        <div>
+            <label for="reason" class="block text-sm font-medium text-foreground">
+                Justification <span class="text-destructive">*</span>
+            </label>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+                Required for compliance. State the support ticket number, business reason, or explicit approval authorizing this access.
+            </p>
+            <textarea id="reason" name="reason" rows="3" required
+                      placeholder="e.g. Support ticket #1234 — user unable to access billing settings after plan change."
+                      class="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">
+                Begin impersonation
+            </button>
+            <a href="{{ path('admin_users_show', {id: targetUser.id}) }}"
+               class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

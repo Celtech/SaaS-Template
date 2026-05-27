@@ -22,6 +22,12 @@
 
         {% if not user.deleted %}
         <div class="flex gap-2">
+            {% if not user.suspended %}
+                <a href="{{ path('admin_impersonate_confirm', {id: user.id}) }}"
+                   class="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                    Impersonate
+                </a>
+            {% endif %}
             {% if user.suspended %}
                 <form method="POST" action="{{ path('admin_users_unsuspend', {id: user.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('user_unsuspend_' ~ user.id) }}">
