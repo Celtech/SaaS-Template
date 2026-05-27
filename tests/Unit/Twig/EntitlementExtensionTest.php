@@ -11,11 +11,12 @@ use App\Service\EntitlementService;
 use App\Tests\UnitTestCase;
 use App\Twig\EntitlementExtension;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub;
 
 final class EntitlementExtensionTest extends UnitTestCase
 {
-    /** @var EntitlementService&Stub */
+    /** @var EntitlementService&MockObject */
     private EntitlementService $entitlementService;
     /** @var OrganizationProviderInterface&Stub */
     private OrganizationProviderInterface $orgProvider;
@@ -24,7 +25,7 @@ final class EntitlementExtensionTest extends UnitTestCase
 
     protected function setUp(): void
     {
-        $this->entitlementService = $this->createStub(EntitlementService::class);
+        $this->entitlementService = $this->createMock(EntitlementService::class);
         $this->orgProvider = $this->createStub(OrganizationProviderInterface::class);
         $this->extension = new EntitlementExtension($this->entitlementService, $this->orgProvider);
         $this->org = new Organization('Acme', new User('owner@example.com', 'Owner'));

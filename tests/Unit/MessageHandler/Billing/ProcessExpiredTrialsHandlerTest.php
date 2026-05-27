@@ -37,7 +37,7 @@ final class ProcessExpiredTrialsHandlerTest extends UnitTestCase
     private EntityManagerInterface $em;
     /** @var AuditLogger&Stub */
     private AuditLogger $auditLogger;
-    /** @var EntitlementService&Stub */
+    /** @var EntitlementService&MockObject */
     private EntitlementService $entitlementService;
     private BillingSettings $settings;
 
@@ -48,7 +48,7 @@ final class ProcessExpiredTrialsHandlerTest extends UnitTestCase
         $this->planRepository = $this->createStub(PlanRepository::class);
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->auditLogger = $this->createStub(AuditLogger::class);
-        $this->entitlementService = $this->createStub(EntitlementService::class);
+        $this->entitlementService = $this->createMock(EntitlementService::class);
         $this->settings = new BillingSettings();
         $this->billingSettingsRepository->method('getSettings')->willReturn($this->settings);
     }
@@ -124,7 +124,6 @@ final class ProcessExpiredTrialsHandlerTest extends UnitTestCase
         $sub = $this->makeSubscription();
         $this->subscriptionRepository->method('findExpiredTrials')->willReturn([$sub]);
 
-        /** @var EntitlementService&MockObject $entitlementService */
         $entitlementService = $this->createMock(EntitlementService::class);
         $entitlementService->expects($this->once())->method('invalidateForOrg');
 

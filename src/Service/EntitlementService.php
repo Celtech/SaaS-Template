@@ -30,7 +30,7 @@ use Symfony\Contracts\Cache\ItemInterface;
  *   {% if entitlement('can_export') %} ... {% endif %}
  *   {% if entitlement_limit('max_seats') == -1 or members|length < entitlement_limit('max_seats') %}
  */
-final class EntitlementService
+class EntitlementService
 {
     public function __construct(
         private readonly SubscriptionRepository $subscriptionRepository,
