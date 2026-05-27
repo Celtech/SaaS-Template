@@ -26,16 +26,25 @@ use Symfony\Component\Uid\Uuid;
  *
  * AUTH EVENTS  (logAuth)
  * Actions that occur during the authentication and registration flow.
+ * actor_type='admin_user' is set automatically for ROLE_SUPER_ADMIN accounts.
  *
  *   auth.registered                   — new user account created
  *   auth.email.verified               — email address confirmed via token
- *   auth.login.success                — password credential accepted
- *   auth.login.failure                — credential rejected (context: reason, email)
+ *   auth.login.success                — password credential accepted (context: ip)
+ *   auth.login.failure                — credential rejected (context: attempted_email, reason, ip)
  *   auth.logout                       — explicit sign-out
  *   auth.password_reset.requested     — password reset email dispatched
  *   auth.password_reset.completed     — password changed via reset token
  *   auth.2fa.success                  — 2FA challenge passed (context: provider)
  *   auth.2fa.failure                  — 2FA challenge failed (context: provider)
+ *
+ * ADMIN AUTH EVENTS  (logAdminAuth)
+ * Auth and session events specific to ROLE_SUPER_ADMIN accounts.
+ *
+ *   admin.auth.stepup.confirmed       — re-authentication for admin panel accepted
+ *   admin.auth.stepup.failed          — re-authentication for admin panel rejected
+ *   admin.auth.session.timeout        — admin session expired after 15 min idle
+ *   admin.auth.panel.first_access     — first admin panel route hit in this session
  *
  * SECURITY EVENTS  (logSecurityEvent)
  * Changes to a user's security posture or account state.
@@ -95,6 +104,17 @@ class AuditLogger
         ?array $newValue = null,
     ): void {
         $this->write('admin.' . $action, $actorId, 'admin_user', $subjectId, $subjectType, $oldValue, $newValue);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function logAdminAuth(
+        string $action,
+        string $actorId,
+        array $context = [],
+    ): void {
+        $this->write('admin.auth.' . $action, $actorId, 'admin_user', null, null, null, empty($context) ? null : $context);
     }
 
     public function logImpersonation(
