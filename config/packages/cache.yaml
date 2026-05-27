@@ -22,10 +22,20 @@ framework:
                 provider: '%env(REDIS_DSN)%'
                 default_lifetime: 604800
 
+            # Caches the full entitlement map per org. Invalidated on any
+            # subscription change. TTL is 1 hour as a safety net.
+            cache.entitlements:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_DSN)%'
+                default_lifetime: 3600
+
 when@test:
     framework:
         cache:
             pools:
                 cache.stripe_webhooks:
+                    adapter: cache.adapter.array
+                    provider: ~
+                cache.entitlements:
                     adapter: cache.adapter.array
                     provider: ~

@@ -10,6 +10,7 @@ use App\Entity\Subscription;
 use App\Entity\SubscriptionStatus;
 use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\EntitlementService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Invoice as StripeInvoice;
@@ -28,6 +29,7 @@ final class SubscriptionManager
         private readonly EntityManagerInterface $em,
         private readonly SubscriptionRepository $subscriptionRepository,
         private readonly AuditLogger $auditLogger,
+        private readonly EntitlementService $entitlementService,
     ) {
     }
 
@@ -86,6 +88,8 @@ final class SubscriptionManager
         }
 
         $this->em->flush();
+
+        $this->entitlementService->invalidateForOrg($org);
 
         $action = $isNew ? 'subscription.created' : 'subscription.updated';
         $this->auditLogger->logBillingEvent(

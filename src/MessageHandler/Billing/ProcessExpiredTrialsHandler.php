@@ -12,6 +12,7 @@ use App\Repository\BillingSettingsRepository;
 use App\Repository\PlanRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\EntitlementService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -25,6 +26,7 @@ final class ProcessExpiredTrialsHandler
         private readonly PlanRepository $planRepository,
         private readonly EntityManagerInterface $em,
         private readonly AuditLogger $auditLogger,
+        private readonly EntitlementService $entitlementService,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -45,6 +47,10 @@ final class ProcessExpiredTrialsHandler
         }
 
         $this->em->flush();
+
+        foreach ($expiredTrials as $subscription) {
+            $this->entitlementService->invalidateForOrg($subscription->getOrganization());
+        }
     }
 
     private function applyBehavior(Subscription $subscription, TrialExpiryBehavior $behavior): void
