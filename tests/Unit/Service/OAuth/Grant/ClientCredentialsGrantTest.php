@@ -62,7 +62,7 @@ final class ClientCredentialsGrantTest extends UnitTestCase
     public function returnsUnauthorizedClientWhenGrantNotAllowed(): void
     {
         $client = $this->createMock(OAuthClient::class);
-        $client->method('supportsGrant')->with('client_credentials')->willReturn(false);
+        $client->method('supportsGrant')->willReturn(false);
 
         $this->clientService->method('validateClientCredentials')->willReturn($client);
 
