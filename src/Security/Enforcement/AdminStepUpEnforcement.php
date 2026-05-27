@@ -10,9 +10,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\RouterInterface;
 
 /**
- * Requires ROLE_SUPER_ADMIN users to re-confirm their password before
- * accessing any /admin/* route. The confirmation is valid for 15 minutes
- * (matching the idle session timeout).
+ * Requires ROLE_SUPER_ADMIN users to fully re-authenticate (password + 2FA)
+ * before accessing any /admin/* route. Redirects to the standard login page
+ * so all configured 2FA methods are available.
+ *
+ * After successful re-authentication, TwoFactorAuditSubscriber sets the
+ * confirmation session key and scheb redirects back to the intended URL.
  *
  * Priority 20 — runs after 2FA enrollment (10) is satisfied.
  */
@@ -20,7 +23,9 @@ final class AdminStepUpEnforcement implements SecurityEnforcementInterface
 {
     private const TTL_SECONDS = 900;
     public const SESSION_KEY = '_admin_stepup_confirmed_at';
-    public const RETURN_URL_KEY = '_admin_stepup_return_url';
+
+    // Symfony's target path session key for the 'main' firewall.
+    private const TARGET_PATH_KEY = '_security.main.target_path';
 
     public function __construct(private readonly RouterInterface $router)
     {
@@ -52,13 +57,14 @@ final class AdminStepUpEnforcement implements SecurityEnforcementInterface
 
     public function buildRedirectResponse(Request $request): RedirectResponse
     {
-        $request->getSession()->set(self::RETURN_URL_KEY, $request->getUri());
+        // Store the intended destination so scheb redirects back after 2FA completes.
+        $request->getSession()->set(self::TARGET_PATH_KEY, $request->getUri());
 
-        return new RedirectResponse($this->router->generate('admin_stepup_confirm'));
+        return new RedirectResponse($this->router->generate('auth_login'));
     }
 
     public function getExemptRoutes(): array
     {
-        return ['admin_stepup_confirm'];
+        return [];
     }
 }
