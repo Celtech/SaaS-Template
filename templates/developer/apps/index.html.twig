@@ -1,0 +1,84 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}OAuth Applications{% endblock %}
+
+{% block main %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-foreground">OAuth Applications</h1>
+            <p class="mt-1 text-sm text-muted-foreground">Manage OAuth 2.0 clients for your organization.</p>
+        </div>
+        <a href="{{ path('developer_apps_new') }}"
+           class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Application
+        </a>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm
+                {{ type == 'error' ? 'bg-destructive/10 text-destructive' :
+                   type == 'warning' ? 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                       'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if clients is empty %}
+        <div class="rounded-lg border border-dashed border-border bg-card p-12 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            <p class="mt-4 text-sm font-medium text-foreground">No applications yet</p>
+            <p class="mt-1 text-sm text-muted-foreground">Create your first OAuth application to start integrating.</p>
+            <a href="{{ path('developer_apps_new') }}"
+               class="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                Create Application
+            </a>
+        </div>
+    {% else %}
+        <div class="rounded-lg border border-border overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="border-b border-border bg-muted/40">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Client ID</th>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Grants</th>
+                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
+                        <th class="px-4 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for client in clients %}
+                        <tr class="bg-card hover:bg-muted/20 transition-colors">
+                            <td class="px-4 py-3 font-medium text-foreground">{{ client.name }}</td>
+                            <td class="px-4 py-3">
+                                <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{{ client.clientId }}</code>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    {% for grant in client.allowedGrants %}
+                                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                            {% if grant == 'client_credentials' %}M2M
+                                            {% elseif grant == 'authorization_code' %}Auth Code
+                                            {% elseif grant == 'urn:ietf:params:oauth:grant-type:device_code' %}Device
+                                            {% elseif grant == 'refresh_token' %}Refresh
+                                            {% else %}{{ grant }}{% endif %}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground">{{ client.createdAt|date('M j, Y') }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ path('developer_apps_show', {id: client.id}) }}"
+                                   class="text-sm text-primary hover:underline">Details</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
