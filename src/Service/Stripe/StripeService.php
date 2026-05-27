@@ -7,8 +7,10 @@ namespace App\Service\Stripe;
 use App\Entity\Plan;
 use Stripe\BillingPortal\Session as PortalSession;
 use Stripe\Checkout\Session as CheckoutSession;
+use Stripe\Collection;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
+use Stripe\Invoice;
 use Stripe\Price;
 use Stripe\Product;
 use Stripe\StripeClient;
@@ -193,6 +195,21 @@ final class StripeService
         return $this->stripe->billingPortal->sessions->create([
             'customer' => $stripeCustomerId,
             'return_url' => $returnUrl,
+        ]);
+    }
+
+    /**
+     * Returns the most recent invoices for a Stripe customer.
+     *
+     * @return Collection<Invoice>
+     *
+     * @throws ApiErrorException
+     */
+    public function listInvoices(string $stripeCustomerId, int $limit = 12): Collection
+    {
+        return $this->stripe->invoices->all([
+            'customer' => $stripeCustomerId,
+            'limit' => $limit,
         ]);
     }
 

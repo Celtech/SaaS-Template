@@ -86,13 +86,18 @@ final class OnboardingController extends AbstractController
             }
         }
 
-        // Fall back to the configured default trial plan when no token was provided
+        // Fall back to the admin-configured default trial plan
         if ($plan === null) {
             $defaultSlug = $billingSettings->getDefaultTrialPlanSlug();
             $plan = $defaultSlug !== null ? $planRepository->findBySlug($defaultSlug) : null;
         }
 
-        // Fall back further to the free plan
+        // Fall back to the highest-tier paid plan (typical SaaS default: best trial experience)
+        if ($plan === null) {
+            $plan = $planRepository->findDefaultTrialPlan();
+        }
+
+        // Last resort: free plan (only if no paid plans exist at all)
         if ($plan === null) {
             $plan = $planRepository->findOneBy(['isFree' => true, 'isActive' => true]);
         }
