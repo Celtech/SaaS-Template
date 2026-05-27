@@ -9,12 +9,16 @@ use App\Entity\User;
 use App\Form\OrgSettingsType;
 use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
+use App\Repository\SubscriptionRepository;
 use App\Repository\UserRepository;
 use App\Repository\UserRoleRepository;
 use App\Service\OrgMemberService;
+use App\Service\Stripe\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
+use Stripe\Exception\ApiErrorException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,6 +37,8 @@ final class OrgSettingsController extends AbstractController
         UserRoleRepository $userRoleRepository,
         RoleRepository $roleRepository,
         OrgInvitationRepository $invitationRepository,
+        #[Autowire(param: 'billing.enabled')]
+        bool $billingEnabled,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -77,6 +83,45 @@ final class OrgSettingsController extends AbstractController
             'canRemoveMembers' => $this->isGranted('org.members.remove'),
             'canInviteMembers' => $canInviteMembers,
             'pendingInvitations' => $canInviteMembers ? $invitationRepository->findPendingByOrg($org) : [],
+            'billingEnabled' => $billingEnabled,
+        ]);
+    }
+
+    #[Route('/settings/billing', name: 'org_settings_billing', methods: ['GET'])]
+    public function billing(
+        SubscriptionRepository $subscriptionRepository,
+        StripeService $stripeService,
+        #[Autowire(param: 'billing.enabled')]
+        bool $billingEnabled,
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        $org = $currentUser->getOrganization();
+
+        if ($org === null) {
+            return $this->redirectToRoute('onboarding_org');
+        }
+
+        if (!$billingEnabled) {
+            return $this->redirectToRoute('org_settings');
+        }
+
+        $subscription = $subscriptionRepository->findForOrg($org);
+        $invoices = [];
+
+        if ($subscription?->getStripeCustomerId() !== null) {
+            try {
+                $invoices = $stripeService->listInvoices($subscription->getStripeCustomerId())->data;
+            } catch (ApiErrorException) {
+                // Non-fatal — billing history just won't show
+            }
+        }
+
+        return $this->render('org/settings_billing.html.twig', [
+            'org' => $org,
+            'subscription' => $subscription,
+            'invoices' => $invoices,
+            'billingEnabled' => $billingEnabled,
         ]);
     }
 

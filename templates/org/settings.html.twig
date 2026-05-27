@@ -10,6 +10,17 @@
         <p class="mt-1 text-sm text-muted-foreground">Manage your organization settings and members.</p>
     </div>
 
+    <div class="flex gap-4 border-b text-sm">
+        <a href="{{ path('org_settings') }}" class="border-b-2 border-primary pb-3 font-medium text-foreground">
+            General
+        </a>
+        {% if billingEnabled is defined and billingEnabled %}
+        <a href="{{ path('org_settings_billing') }}" class="pb-3 text-muted-foreground hover:text-foreground">
+            Billing
+        </a>
+        {% endif %}
+    </div>
+
     {% for message in app.flashes('success') %}
         <div class="rounded-lg bg-success/10 px-4 py-3 text-sm text-success">{{ message }}</div>
     {% endfor %}
