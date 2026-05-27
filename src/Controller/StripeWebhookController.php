@@ -86,6 +86,13 @@ final class StripeWebhookController extends AbstractController
             $this->logger->warning('stripe.webhook: subscription.updated for unknown subscription', [
                 'stripe_subscription_id' => $stripeSubscription->id,
             ]);
+            $this->auditLogger->logBillingEvent(
+                'subscription.updated.unmatched',
+                $stripeSubscription->id,
+                'stripe_subscription',
+                null,
+                ['event_id' => $event->id, 'status' => $stripeSubscription->status],
+            );
 
             return;
         }
@@ -129,6 +136,13 @@ final class StripeWebhookController extends AbstractController
             $this->logger->warning('stripe.webhook: subscription.deleted for unknown subscription', [
                 'stripe_subscription_id' => $stripeSubscription->id,
             ]);
+            $this->auditLogger->logBillingEvent(
+                'subscription.deleted.unmatched',
+                $stripeSubscription->id,
+                'stripe_subscription',
+                null,
+                ['event_id' => $event->id],
+            );
 
             return;
         }
@@ -142,6 +156,14 @@ final class StripeWebhookController extends AbstractController
             $subscription->getPlan(),
             $stripeSubscription,
             $stripeCustomerId,
+        );
+
+        $this->auditLogger->logBillingEvent(
+            'subscription.canceled',
+            $subscription->getOrganization()->getId()->toRfc4122(),
+            'organization',
+            ['status' => $subscription->getStatus()->value],
+            ['stripe_subscription_id' => $stripeSubscription->id],
         );
     }
 
