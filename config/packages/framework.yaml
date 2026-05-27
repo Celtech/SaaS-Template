@@ -9,7 +9,7 @@ framework:
     # Request::getClientIp() returns the real client IP in audit logs.
     # Production: set TRUSTED_PROXIES to the load-balancer IP/CIDR (e.g. 10.0.0.0/8).
     # Dev/Docker: loopback default so FrankenPHP's forwarded headers are trusted.
-    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_proxies: '%env(default::TRUSTED_PROXIES)%'
     trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
 
     #esi: true
