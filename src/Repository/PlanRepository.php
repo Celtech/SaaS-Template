@@ -66,4 +66,16 @@ class PlanRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['stripeProductId' => $stripeProductId]);
     }
+
+    /** Returns the first active free plan, or null if none is configured. */
+    public function findFreePlan(): ?Plan
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.isActive = true')
+            ->andWhere('p.isFree = true')
+            ->orderBy('p.sortOrder', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

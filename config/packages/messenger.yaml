@@ -16,6 +16,8 @@ framework:
             'App\Message\Webhook\DeliverWebhookMessage': async
             'App\Message\Mail\SendMailMessage': async
             'App\Message\User\AnonymizeUserMessage': async
+            'App\Message\Billing\ProcessExpiredTrialsMessage': async
+            'App\Message\Billing\EnforceGracePeriodMessage': async
 
 when@test:
     framework:
