@@ -25,13 +25,6 @@ class BillingSettings
     #[ORM\Column(type: 'integer')]
     private int $trialDays = self::DEFAULT_TRIAL_DAYS;
 
-    #[ORM\Column(type: 'boolean')]
-    private bool $freeTierEnabled = false;
-
-    #[ORM\ManyToOne(targetEntity: Plan::class)]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Plan $freeTierPlan = null;
-
     #[ORM\Column(type: 'string', enumType: TrialExpiryBehavior::class)]
     private TrialExpiryBehavior $trialExpiryBehavior = TrialExpiryBehavior::RequirePayment;
 
@@ -73,26 +66,6 @@ class BillingSettings
     public function setTrialDays(int $trialDays): void
     {
         $this->trialDays = $trialDays;
-    }
-
-    public function isFreeTierEnabled(): bool
-    {
-        return $this->freeTierEnabled;
-    }
-
-    public function setFreeTierEnabled(bool $freeTierEnabled): void
-    {
-        $this->freeTierEnabled = $freeTierEnabled;
-    }
-
-    public function getFreeTierPlan(): ?Plan
-    {
-        return $this->freeTierPlan;
-    }
-
-    public function setFreeTierPlan(?Plan $freeTierPlan): void
-    {
-        $this->freeTierPlan = $freeTierPlan;
     }
 
     public function getTrialExpiryBehavior(): TrialExpiryBehavior
