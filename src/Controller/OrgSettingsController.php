@@ -12,6 +12,7 @@ use App\Repository\RoleRepository;
 use App\Repository\SubscriptionRepository;
 use App\Repository\UserRepository;
 use App\Repository\UserRoleRepository;
+use App\Service\Audit\AuditLogger;
 use App\Service\OrgMemberService;
 use App\Service\Stripe\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +38,7 @@ final class OrgSettingsController extends AbstractController
         UserRoleRepository $userRoleRepository,
         RoleRepository $roleRepository,
         OrgInvitationRepository $invitationRepository,
+        AuditLogger $auditLogger,
         #[Autowire(param: 'billing.enabled')]
         bool $billingEnabled,
     ): Response {
@@ -56,7 +58,19 @@ final class OrgSettingsController extends AbstractController
             if (!$canManageSettings) {
                 throw $this->createAccessDeniedException();
             }
+
+            $oldName = $em->getUnitOfWork()->getOriginalEntityData($org)['name'] ?? $org->getName();
             $em->flush();
+
+            $auditLogger->logBillingEvent(
+                'org.settings.updated',
+                $org->getId()->toRfc4122(),
+                'organization',
+                ['name' => $oldName],
+                ['name' => $org->getName()],
+                $currentUser->getId()->toRfc4122(),
+            );
+
             $this->addFlash('success', 'Organization settings saved.');
 
             return $this->redirectToRoute('org_settings');

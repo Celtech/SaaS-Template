@@ -22,15 +22,17 @@ final class AuditLogAdminController extends AbstractController
     {
         $action = $request->query->getString('action') ?: null;
         $actorId = $request->query->getString('actor') ?: null;
+        $sessionId = $request->query->getString('session') ?: null;
         $page = max(1, $request->query->getInt('page', 1));
 
-        $entries = $auditLogRepository->findFiltered($action, $actorId, $page, self::PER_PAGE);
-        $total = $auditLogRepository->countFiltered($action, $actorId);
+        $entries = $auditLogRepository->findFiltered($action, $actorId, $sessionId, $page, self::PER_PAGE);
+        $total = $auditLogRepository->countFiltered($action, $actorId, $sessionId);
 
         return $this->render('admin/audit_log/index.html.twig', [
             'entries' => $entries,
             'action' => $action ?? '',
             'actor' => $actorId ?? '',
+            'session' => $sessionId ?? '',
             'page' => $page,
             'perPage' => self::PER_PAGE,
             'total' => $total,

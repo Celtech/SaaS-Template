@@ -68,7 +68,7 @@ class AuditLogRepository extends ServiceEntityRepository
     /**
      * @return AuditLog[]
      */
-    public function findFiltered(?string $action, ?string $actorId, int $page = 1, int $perPage = 50): array
+    public function findFiltered(?string $action, ?string $actorId, ?string $sessionId = null, int $page = 1, int $perPage = 50): array
     {
         $qb = $this->createQueryBuilder('a')->orderBy('a.createdAt', 'DESC');
 
@@ -78,6 +78,9 @@ class AuditLogRepository extends ServiceEntityRepository
         if ($actorId !== null) {
             $qb->andWhere('a.actorId = :actorId')->setParameter('actorId', $actorId);
         }
+        if ($sessionId !== null) {
+            $qb->andWhere('a.impersonationSessionId = :sessionId')->setParameter('sessionId', $sessionId);
+        }
 
         return $qb
             ->setFirstResult(($page - 1) * $perPage)
@@ -86,7 +89,7 @@ class AuditLogRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function countFiltered(?string $action, ?string $actorId): int
+    public function countFiltered(?string $action, ?string $actorId, ?string $sessionId = null): int
     {
         $qb = $this->createQueryBuilder('a')->select('COUNT(a.id)');
 
@@ -95,6 +98,9 @@ class AuditLogRepository extends ServiceEntityRepository
         }
         if ($actorId !== null) {
             $qb->andWhere('a.actorId = :actorId')->setParameter('actorId', $actorId);
+        }
+        if ($sessionId !== null) {
+            $qb->andWhere('a.impersonationSessionId = :sessionId')->setParameter('sessionId', $sessionId);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
