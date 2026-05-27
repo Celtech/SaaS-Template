@@ -28,3 +28,4 @@ when@test:
             pools:
                 cache.stripe_webhooks:
                     adapter: cache.adapter.array
+                    provider: ~
