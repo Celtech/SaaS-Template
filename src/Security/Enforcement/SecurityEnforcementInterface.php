@@ -52,4 +52,13 @@ interface SecurityEnforcementInterface
      * @return string[]
      */
     public function getExemptRoutes(): array;
+
+    /**
+     * Return true when the security token must be invalidated on redirect so
+     * Symfony presents the login form rather than treating the user as already
+     * authenticated. Set this for step-up / re-authentication gates. Leave
+     * false for setup-only gates (e.g. enroll 2FA) where the user must remain
+     * authenticated to complete the flow.
+     */
+    public function requiresFullReauthentication(): bool;
 }

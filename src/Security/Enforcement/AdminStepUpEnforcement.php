@@ -67,4 +67,9 @@ final class AdminStepUpEnforcement implements SecurityEnforcementInterface
     {
         return [];
     }
+
+    public function requiresFullReauthentication(): bool
+    {
+        return true;
+    }
 }

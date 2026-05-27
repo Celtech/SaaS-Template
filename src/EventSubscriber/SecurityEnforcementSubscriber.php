@@ -106,6 +106,12 @@ final class SecurityEnforcementSubscriber implements EventSubscriberInterface
                 continue;
             }
 
+            if ($enforcement->requiresFullReauthentication()) {
+                // Clear the in-memory token so ContextListener does not write
+                // it back to the session, forcing a full login on the next request.
+                $this->tokenStorage->setToken(null);
+            }
+
             $event->setResponse($enforcement->buildRedirectResponse($request));
 
             return;

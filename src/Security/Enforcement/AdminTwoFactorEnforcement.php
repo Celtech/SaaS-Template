@@ -47,4 +47,9 @@ final class AdminTwoFactorEnforcement implements SecurityEnforcementInterface
             'profile_2fa_backup_codes',
         ];
     }
+
+    public function requiresFullReauthentication(): bool
+    {
+        return false;
+    }
 }
