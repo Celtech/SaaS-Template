@@ -5,7 +5,13 @@
 <div class="mx-auto max-w-md space-y-6">
     <div>
         <h1 class="text-2xl font-semibold text-foreground">Confirm your identity</h1>
-        <p class="mt-1 text-sm text-muted-foreground">Re-enter your password to access the admin panel.</p>
+        <p class="mt-1 text-sm text-muted-foreground">
+            {% if step == 'totp' %}
+                Enter your authenticator code to access the admin panel.
+            {% else %}
+                Re-enter your password to access the admin panel.
+            {% endif %}
+        </p>
     </div>
 
     {% for message in app.flashes('error') %}
@@ -22,25 +28,65 @@
         </div>
     </div>
 
-    <form method="POST" class="space-y-4">
-        <input type="hidden" name="_token" value="{{ csrf_token('admin_stepup') }}">
-
-        <div>
-            <label for="password" class="block text-sm font-medium text-foreground">Password</label>
-            <input id="password" name="password" type="password" required autofocus
-                   class="mt-1.5 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+    {% if step == 'totp' %}
+        {# Step 2: TOTP verification #}
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Password confirmed
+            <span class="mx-1">·</span>
+            Step 2 of 2: Authenticator code
         </div>
 
-        <div class="flex gap-3">
-            <button type="submit"
-                    class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                Confirm
-            </button>
-            <a href="{{ path('auth_logout') }}"
-               class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">
-                Sign out
-            </a>
+        <form method="POST" class="space-y-4">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_stepup') }}">
+            <input type="hidden" name="step" value="totp">
+
+            <div>
+                <label for="code" class="block text-sm font-medium text-foreground">Authenticator code</label>
+                <input id="code" name="code" type="text" inputmode="numeric" pattern="[0-9]*"
+                       autocomplete="one-time-code" required autofocus maxlength="6"
+                       placeholder="000000"
+                       class="mt-1.5 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground font-mono tracking-widest placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Verify
+                </button>
+                <a href="{{ path('auth_logout') }}"
+                   class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">
+                    Sign out
+                </a>
+            </div>
+        </form>
+    {% else %}
+        {# Step 1: Password #}
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            Step 1 of 2: Password
         </div>
-    </form>
+
+        <form method="POST" class="space-y-4">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_stepup') }}">
+            <input type="hidden" name="step" value="password">
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-foreground">Password</label>
+                <input id="password" name="password" type="password" required autofocus
+                       class="mt-1.5 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                    Continue
+                </button>
+                <a href="{{ path('auth_logout') }}"
+                   class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">
+                    Sign out
+                </a>
+            </div>
+        </form>
+    {% endif %}
 </div>
 {% endblock %}
