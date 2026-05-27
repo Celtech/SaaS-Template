@@ -11,68 +11,174 @@
         </p>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {% for plan in plans %}
-            <div class="rounded-lg border bg-card p-6 flex flex-col gap-4
-                {% if currentSubscription and currentSubscription.plan.id == plan.id %}ring-2 ring-primary{% endif %}">
-                <div>
-                    <h2 class="text-lg font-semibold text-foreground">{{ plan.name }}</h2>
-                    {% if plan.description %}
-                        <p class="mt-1 text-sm text-muted-foreground">{{ plan.description }}</p>
-                    {% endif %}
-                </div>
-
-                <div>
-                    {% if plan.free %}
-                        <span class="text-3xl font-bold text-foreground">Free</span>
-                    {% else %}
-                        <span class="text-3xl font-bold text-foreground">
-                            ${{ (plan.monthlyPriceCents / 100)|number_format(0) }}
-                        </span>
-                        <span class="text-sm text-muted-foreground">/ month</span>
-                        {% if plan.annualPriceCents > 0 %}
-                            <p class="text-xs text-muted-foreground mt-1">
-                                or ${{ (plan.annualPriceCents / 100)|number_format(0) }}/yr
-                                (save ${{ ((plan.monthlyPriceCents * 12 - plan.annualPriceCents) / 100)|number_format(0) }})
-                            </p>
-                        {% endif %}
-                    {% endif %}
-                </div>
-
-                <div class="flex-1">
-                    <ul class="space-y-2 text-sm text-muted-foreground">
-                        {% for pe in plan.planEntitlements %}
-                            <li class="flex items-center gap-2">
-                                <svg class="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span>{{ pe.entitlement.name }}:
-                                    {% if pe.unlimited %}Unlimited
-                                    {% elseif pe.entitlement.type.value == 'boolean' %}
-                                        {{ pe.boolValue ? 'Yes' : 'No' }}
-                                    {% else %}
-                                        {{ pe.intValue }}
-                                    {% endif %}
-                                </span>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <div class="mt-auto">
-                    {% if currentSubscription and currentSubscription.plan.id == plan.id %}
-                        <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
-                            Current plan
-                        </span>
-                    {% else %}
-                        {# Checkout links wired in PR 4 #}
-                        <a href="#" class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                            Get started
-                        </a>
-                    {% endif %}
-                </div>
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm
+                {{ type == 'error' ? 'bg-destructive/10 text-destructive' :
+                   type == 'info'  ? 'bg-muted text-muted-foreground' :
+                                     'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
             </div>
         {% endfor %}
+    {% endfor %}
+
+    <div x-data="{ interval: '{{ pendingPlan ? pendingPlan.interval : 'month' }}' }">
+        {# Interval toggle #}
+        <div class="flex items-center gap-3 mb-8">
+            <span class="text-sm font-medium text-foreground">Monthly</span>
+            <button
+                type="button"
+                @click="interval = interval === 'month' ? 'year' : 'month'"
+                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
+                       bg-muted transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring"
+                :class="interval === 'year' ? 'bg-primary' : 'bg-muted'"
+                aria-label="Toggle annual billing"
+            >
+                <span
+                    class="inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200"
+                    :class="interval === 'year' ? 'translate-x-5' : 'translate-x-0'"
+                ></span>
+            </button>
+            <span class="text-sm font-medium text-foreground">
+                Annual
+                <span class="ml-1 text-xs text-primary font-semibold">Save up to 20%</span>
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {% for plan in plans %}
+                {% set isCurrent = currentSubscription and currentSubscription.plan.id == plan.id %}
+                {% set isPending = pendingPlan and pendingPlan.plan == plan.slug %}
+                <div class="rounded-lg border bg-card p-6 flex flex-col gap-4
+                    {{ isCurrent ? 'ring-2 ring-primary' : (isPending ? 'ring-2 ring-primary/60' : '') }}">
+
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-foreground">{{ plan.name }}</h2>
+                            {% if plan.description %}
+                                <p class="mt-1 text-sm text-muted-foreground">{{ plan.description }}</p>
+                            {% endif %}
+                        </div>
+                        {% if isCurrent %}
+                            <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Current</span>
+                        {% elseif isPending %}
+                            <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Selected</span>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        {% if plan.customQuote %}
+                            <span class="text-2xl font-bold text-foreground">Custom pricing</span>
+                            <p class="text-sm text-muted-foreground mt-1">Tailored to your organization's needs.</p>
+                        {% elseif plan.free %}
+                            <span class="text-3xl font-bold text-foreground">Free</span>
+                        {% else %}
+                            <div x-show="interval === 'month'">
+                                <span class="text-3xl font-bold text-foreground">
+                                    ${{ (plan.monthlyPriceCents / 100)|number_format(0) }}
+                                </span>
+                                <span class="text-sm text-muted-foreground">/ month</span>
+                            </div>
+                            <div x-show="interval === 'year'">
+                                {% if plan.annualPriceCents > 0 %}
+                                    <span class="text-3xl font-bold text-foreground">
+                                        ${{ (plan.annualPriceCents / 100)|number_format(0) }}
+                                    </span>
+                                    <span class="text-sm text-muted-foreground">/ year</span>
+                                    <p class="text-xs text-primary mt-1">
+                                        Save ${{ ((plan.monthlyPriceCents * 12 - plan.annualPriceCents) / 100)|number_format(0) }} vs monthly
+                                    </p>
+                                {% else %}
+                                    <span class="text-3xl font-bold text-foreground">
+                                        ${{ (plan.monthlyPriceCents / 100)|number_format(0) }}
+                                    </span>
+                                    <span class="text-sm text-muted-foreground">/ month</span>
+                                    <p class="text-xs text-muted-foreground mt-1">Annual billing not available</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-1">
+                        <ul class="space-y-2 text-sm text-muted-foreground">
+                            {% for pe in plan.planEntitlements %}
+                                <li class="flex items-center gap-2">
+                                    <svg class="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>{{ pe.entitlement.name }}:
+                                        {% if pe.unlimited %}Unlimited
+                                        {% elseif pe.entitlement.type.value == 'boolean' %}
+                                            {{ pe.boolValue ? 'Yes' : 'No' }}
+                                        {% else %}
+                                            {{ pe.intValue }}
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="mt-auto">
+                        {% if isCurrent %}
+                            <span class="block w-full text-center rounded-md border border-border py-2 text-sm text-muted-foreground">
+                                Current plan
+                            </span>
+                        {% elseif plan.customQuote %}
+                            <a href="mailto:sales@example.com?subject=Enterprise%20Plan%20Inquiry"
+                               class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium
+                                      text-primary-foreground hover:bg-primary/90">
+                                Contact sales
+                            </a>
+                        {% elseif plan.free %}
+                            <form method="POST" action="{{ path('billing_select_free') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('billing_select_free') }}">
+                                <button type="submit"
+                                    class="block w-full text-center rounded-md border border-border px-4 py-2 text-sm
+                                           font-medium text-foreground hover:bg-muted">
+                                    Get started free
+                                </button>
+                            </form>
+                        {% else %}
+                            <div x-show="interval === 'month'">
+                                <form method="POST" action="{{ path('billing_checkout') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout') }}">
+                                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                    <input type="hidden" name="interval" value="month">
+                                    <button type="submit"
+                                        {% if plan.stripePriceIdMonthly is null %}disabled{% endif %}
+                                        class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium
+                                               text-primary-foreground hover:bg-primary/90
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Get started
+                                    </button>
+                                </form>
+                            </div>
+                            <div x-show="interval === 'year'">
+                                <form method="POST" action="{{ path('billing_checkout') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout') }}">
+                                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                    <input type="hidden" name="interval" value="year">
+                                    <button type="submit"
+                                        {% if plan.stripePriceIdAnnual is null %}disabled{% endif %}
+                                        class="block w-full text-center rounded-md bg-primary px-4 py-2 text-sm font-medium
+                                               text-primary-foreground hover:bg-primary/90
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Get started — Annual
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if billingSettings.trialEnabled %}
+            <p class="mt-6 text-center text-sm text-muted-foreground">
+                All paid plans include a {{ billingSettings.trialDays }}-day free trial. No credit card required upfront.
+            </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

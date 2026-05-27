@@ -23,8 +23,19 @@ class PlanRepository extends ServiceEntityRepository
         return $this->findOneBy(['slug' => $slug]);
     }
 
-    /** @return Plan[] */
+    /** @return Plan[] Active plans shown on the public pricing page. */
     public function findAllActive(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.isActive = true')
+            ->andWhere('p.isPublic = true')
+            ->orderBy('p.sortOrder', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return Plan[] All active plans including private ones (for admin use). */
+    public function findAllActiveIncludingPrivate(): array
     {
         return $this->createQueryBuilder('p')
             ->where('p.isActive = true')

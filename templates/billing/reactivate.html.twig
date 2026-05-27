@@ -28,10 +28,12 @@
         <p class="text-sm text-muted-foreground">
             Update your payment method via the Stripe billing portal. Changes take effect immediately.
         </p>
-        {# Portal link wired in PR 4 #}
-        <a href="#" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            Update payment method
-        </a>
+        <form method="POST" action="{{ path('billing_portal') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('billing_portal') }}">
+            <button type="submit" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                Update payment method
+            </button>
+        </form>
         <p class="text-xs text-muted-foreground">
             You'll be redirected to our secure payment provider.
         </p>

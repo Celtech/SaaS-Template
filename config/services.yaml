@@ -30,6 +30,10 @@ services:
         arguments:
             $stripeSecretKey: '%env(STRIPE_SECRET_KEY)%'
 
+    App\Service\Billing\PlanTokenService:
+        arguments:
+            $secret: '%plan_token.secret%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 

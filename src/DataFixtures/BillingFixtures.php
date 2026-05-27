@@ -97,14 +97,12 @@ final class BillingFixtures extends Fixture
             manager: $manager,
             slug: 'enterprise',
             name: 'Enterprise',
-            description: 'Seat-based plan for large organizations with dedicated support.',
+            description: 'Custom pricing and features for large organizations with dedicated support.',
             sortOrder: 4,
             isFree: false,
-            monthlyPriceCents: 29900,
-            annualPriceCents: 249000,
-            stripeProductId: 'prod_UZRyWkIAZ6Jijy',
-            stripePriceIdMonthly: 'price_1TaJ5CJ2HhjxokWxMLSF9HR1',
-            stripePriceIdAnnual: 'price_1TaJ5CJ2HhjxokWxqazZlOso',
+            monthlyPriceCents: 0,
+            annualPriceCents: 0,
+            isCustomQuote: true,
         );
 
         // --- Plan → Entitlement mappings ---
@@ -204,9 +202,11 @@ final class BillingFixtures extends Fixture
         bool $isFree,
         int $monthlyPriceCents,
         int $annualPriceCents,
-        string $stripeProductId,
-        string $stripePriceIdMonthly,
-        ?string $stripePriceIdAnnual,
+        ?string $stripeProductId = null,
+        ?string $stripePriceIdMonthly = null,
+        ?string $stripePriceIdAnnual = null,
+        bool $isCustomQuote = false,
+        bool $isPublic = true,
     ): Plan {
         $plan = new Plan($slug, $name);
         $plan->setDescription($description);
@@ -217,6 +217,8 @@ final class BillingFixtures extends Fixture
         $plan->setStripeProductId($stripeProductId);
         $plan->setStripePriceIdMonthly($stripePriceIdMonthly);
         $plan->setStripePriceIdAnnual($stripePriceIdAnnual);
+        $plan->setIsCustomQuote($isCustomQuote);
+        $plan->setIsPublic($isPublic);
         $manager->persist($plan);
 
         return $plan;

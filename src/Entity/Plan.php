@@ -52,6 +52,14 @@ class Plan
     #[ORM\Column(type: 'boolean')]
     private bool $isFree = false;
 
+    /** When true, the pricing page shows "Contact us" instead of a price and checkout button. */
+    #[ORM\Column(type: 'boolean')]
+    private bool $isCustomQuote = false;
+
+    /** When false, the plan is not shown on the public pricing page (used for private enterprise deals). */
+    #[ORM\Column(type: 'boolean')]
+    private bool $isPublic = true;
+
     /** Controls display order on the pricing page */
     #[ORM\Column(type: 'integer')]
     private int $sortOrder = 0;
@@ -188,6 +196,28 @@ class Plan
     public function setIsFree(bool $isFree): void
     {
         $this->isFree = $isFree;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function isCustomQuote(): bool
+    {
+        return $this->isCustomQuote;
+    }
+
+    public function setIsCustomQuote(bool $isCustomQuote): void
+    {
+        $this->isCustomQuote = $isCustomQuote;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setIsPublic(bool $isPublic): void
+    {
+        $this->isPublic = $isPublic;
         $this->updatedAt = new DateTimeImmutable();
     }
 
