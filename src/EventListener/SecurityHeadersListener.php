@@ -8,10 +8,6 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-/**
- * Applies security headers to every main request response.
- * CSP will be tightened with nonces in Phase 10; this baseline is enforced from Phase 1.
- */
 #[AsEventListener(event: KernelEvents::RESPONSE, priority: -10)]
 final class SecurityHeadersListener
 {
@@ -24,6 +20,9 @@ final class SecurityHeadersListener
         $response = $event->getResponse();
         $headers = $response->headers;
 
+        $nonce = $event->getRequest()->attributes->get('csp_nonce', '');
+        $nonceDirective = $nonce !== '' ? " 'nonce-{$nonce}'" : '';
+
         $headers->set('X-Frame-Options', 'DENY');
         $headers->set('X-Content-Type-Options', 'nosniff');
         $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -33,7 +32,7 @@ final class SecurityHeadersListener
             'Content-Security-Policy',
             implode('; ', [
                 "default-src 'self'",
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' data:",
+                "script-src 'self'{$nonceDirective}",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data:",
                 "font-src 'self'",
