@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\EventSubscriber;
 
 use App\Entity\User;
-use App\Repository\BillingSettingsRepository;
 use App\Repository\SubscriptionRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -22,8 +21,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  * are redirected to onboarding first, before subscription checks happen.
  *
  * Redirect targets:
- *   - No subscription / canceled (free tier disabled) → billing_plans
- *   - past_due / unpaid → billing_reactivate (update payment method)
+ *   - No subscription → onboarding_org (shouldn't happen; fixes broken state)
+ *   - past_due / unpaid / canceled / terminal → billing_reactivate
  *
  * Routes excluded from the check: auth_*, billing_*, stripe_*, admin_*,
  * onboarding_*, 2fa*, _*, app_health.
@@ -44,7 +43,6 @@ final class SubscriptionAccessSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly TokenStorageInterface $tokenStorage,
         private readonly SubscriptionRepository $subscriptionRepository,
-        private readonly BillingSettingsRepository $billingSettingsRepository,
         private readonly UrlGeneratorInterface $urlGenerator,
         #[Autowire(param: 'billing.enabled')]
         private readonly bool $billingEnabled,
@@ -88,15 +86,12 @@ final class SubscriptionAccessSubscriber implements EventSubscriberInterface
         }
 
         $subscription = $this->subscriptionRepository->findForOrg($org);
-        $billingSettings = $this->billingSettingsRepository->getSettings();
 
-        // No subscription at all
+        // No subscription — onboarding should have assigned one; send back to fix it
         if ($subscription === null) {
-            if (!$billingSettings->isFreeTierEnabled()) {
-                $event->setResponse(new RedirectResponse(
-                    $this->urlGenerator->generate('billing_plans')
-                ));
-            }
+            $event->setResponse(new RedirectResponse(
+                $this->urlGenerator->generate('onboarding_org')
+            ));
 
             return;
         }
@@ -106,24 +101,11 @@ final class SubscriptionAccessSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // past_due / unpaid → needs payment method update
-        if ($subscription->isPastDue()) {
-            if ($route !== 'billing_reactivate') {
-                $event->setResponse(new RedirectResponse(
-                    $this->urlGenerator->generate('billing_reactivate')
-                ));
-            }
-
-            return;
+        // past_due / unpaid / canceled / terminal → manage via reactivate page
+        if ($route !== 'billing_reactivate') {
+            $event->setResponse(new RedirectResponse(
+                $this->urlGenerator->generate('billing_reactivate')
+            ));
         }
-
-        // Canceled / other terminal status → pick a plan (unless free tier covers them)
-        if ($billingSettings->isFreeTierEnabled() && $billingSettings->getFreeTierPlan() !== null) {
-            return;
-        }
-
-        $event->setResponse(new RedirectResponse(
-            $this->urlGenerator->generate('billing_plans')
-        ));
     }
 }
