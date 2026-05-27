@@ -201,6 +201,7 @@ final class StripeWebhookControllerTest extends FunctionalTestCase
         return "t={$timestamp},v1={$signature}";
     }
 
+    /** @param array<string, mixed> $dataObject */
     private function buildEventPayload(string $type, array $dataObject): string
     {
         return json_encode([
@@ -214,6 +215,7 @@ final class StripeWebhookControllerTest extends FunctionalTestCase
         ], \JSON_THROW_ON_ERROR);
     }
 
+    /** @return array<string, mixed> */
     private function subscriptionObject(string $stripeSubscriptionId, string $status = 'active'): array
     {
         return [
@@ -227,6 +229,7 @@ final class StripeWebhookControllerTest extends FunctionalTestCase
         ];
     }
 
+    /** @return array<string, mixed> */
     private function invoiceObject(
         string $invoiceId,
         string $subscriptionId,
