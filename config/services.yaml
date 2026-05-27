@@ -30,6 +30,10 @@ services:
         arguments:
             $stripeSecretKey: '%env(STRIPE_SECRET_KEY)%'
 
+    App\Controller\StripeWebhookController:
+        arguments:
+            $webhookSecret: '%env(STRIPE_WEBHOOK_SECRET)%'
+
     App\Service\Billing\PlanTokenService:
         arguments:
             $secret: '%plan_token.secret%'
