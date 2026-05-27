@@ -127,9 +127,9 @@ final class BillingController extends AbstractController
 
             $successUrl = $this->generateUrl(
                 'billing_success',
-                ['session_id' => '{CHECKOUT_SESSION_ID}'],
+                [],
                 UrlGeneratorInterface::ABSOLUTE_URL,
-            );
+            ) . '?session_id={CHECKOUT_SESSION_ID}';
             $cancelUrl = $this->generateUrl('billing_plans', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
             $session = $stripeService->createCheckoutSession(
