@@ -22,21 +22,25 @@
         {% endfor %}
     {% endfor %}
 
-    <div x-data="{ interval: '{{ pendingPlan ? pendingPlan.interval : 'month' }}' }">
+    {% set initialInterval = pendingPlan ? pendingPlan.interval : 'month' %}
+    <div data-controller="billing-interval"
+         data-billing-interval-interval-value="{{ initialInterval }}">
         {# Interval toggle #}
         <div class="flex items-center gap-3 mb-8">
             <span class="text-sm font-medium text-foreground">Monthly</span>
             <button
                 type="button"
-                @click="interval = interval === 'month' ? 'year' : 'month'"
+                data-action="billing-interval#toggle"
+                data-billing-interval-target="toggleButton"
                 class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
-                       bg-muted transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring"
-                :class="interval === 'year' ? 'bg-primary' : 'bg-muted'"
+                       transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring
+                       {{ initialInterval == 'year' ? 'bg-primary' : 'bg-muted' }}"
                 aria-label="Toggle annual billing"
             >
                 <span
-                    class="inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200"
-                    :class="interval === 'year' ? 'translate-x-5' : 'translate-x-0'"
+                    data-billing-interval-target="toggleKnob"
+                    class="inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200
+                           {{ initialInterval == 'year' ? 'translate-x-5' : 'translate-x-0' }}"
                 ></span>
             </button>
             <span class="text-sm font-medium text-foreground">
@@ -73,13 +77,15 @@
                         {% elseif plan.free %}
                             <span class="text-3xl font-bold text-foreground">Free</span>
                         {% else %}
-                            <div x-show="interval === 'month'">
+                            <div data-billing-interval-target="monthContent"
+                                 class="{{ initialInterval == 'year' ? 'hidden' : '' }}">
                                 <span class="text-3xl font-bold text-foreground">
                                     ${{ (plan.monthlyPriceCents / 100)|number_format(0) }}
                                 </span>
                                 <span class="text-sm text-muted-foreground">/ month</span>
                             </div>
-                            <div x-show="interval === 'year'">
+                            <div data-billing-interval-target="yearContent"
+                                 class="{{ initialInterval == 'month' ? 'hidden' : '' }}">
                                 {% if plan.annualPriceCents > 0 %}
                                     <span class="text-3xl font-bold text-foreground">
                                         ${{ (plan.annualPriceCents / 100)|number_format(0) }}
@@ -140,7 +146,8 @@
                                 </button>
                             </form>
                         {% else %}
-                            <div x-show="interval === 'month'">
+                            <div data-billing-interval-target="monthContent"
+                                 class="{{ initialInterval == 'year' ? 'hidden' : '' }}">
                                 <form method="POST" action="{{ path('billing_checkout') }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout') }}">
                                     <input type="hidden" name="plan_id" value="{{ plan.id }}">
@@ -154,7 +161,8 @@
                                     </button>
                                 </form>
                             </div>
-                            <div x-show="interval === 'year'">
+                            <div data-billing-interval-target="yearContent"
+                                 class="{{ initialInterval == 'month' ? 'hidden' : '' }}">
                                 <form method="POST" action="{{ path('billing_checkout') }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('billing_checkout') }}">
                                     <input type="hidden" name="plan_id" value="{{ plan.id }}">
