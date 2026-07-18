@@ -123,15 +123,40 @@
         </dl>
     </div>
 
-    <div class="rounded-lg border border-border bg-card p-6 space-y-3">
-        <h2 class="text-base font-medium text-foreground">Example request</h2>
-        <p class="text-sm text-muted-foreground">Request an access token using Client Credentials:</p>
-        <pre class="overflow-x-auto rounded bg-muted px-4 py-3 font-mono text-xs text-foreground">curl -X POST {{ app.request.schemeAndHttpHost }}/oauth/token \
+    {% if 'client_credentials' in client.allowedGrants %}
+        <div class="rounded-lg border border-border bg-card p-6 space-y-3">
+            <h2 class="text-base font-medium text-foreground">Example request — Client Credentials</h2>
+            <p class="text-sm text-muted-foreground">Request an access token directly, for server-to-server use:</p>
+            <pre class="overflow-x-auto rounded bg-muted px-4 py-3 font-mono text-xs text-foreground">curl -X POST {{ app.request.schemeAndHttpHost }}/oauth/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
   -d "client_id={{ client.clientId }}" \
   -d "client_secret=YOUR_CLIENT_SECRET" \
   -d "scope=api:read"</pre>
-    </div>
+        </div>
+    {% endif %}
+
+    {% if 'urn:ietf:params:oauth:grant-type:device_code' in client.allowedGrants %}
+        <div class="rounded-lg border border-border bg-card p-6 space-y-3">
+            <h2 class="text-base font-medium text-foreground">Example request — Device Authorization</h2>
+            <p class="text-sm text-muted-foreground">Request a device code and user code for CLI or desktop apps:</p>
+            <pre class="overflow-x-auto rounded bg-muted px-4 py-3 font-mono text-xs text-foreground">curl -X POST {{ app.request.schemeAndHttpHost }}/oauth/device/authorization \
+  -d "client_id={{ client.clientId }}" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=api:read"</pre>
+            <p class="text-sm text-muted-foreground">Show the returned <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">user_code</code> to the user, then poll <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">/oauth/token</code> with <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">grant_type=urn:ietf:params:oauth:grant-type:device_code</code> at the given interval.</p>
+        </div>
+    {% endif %}
+
+    {% if 'authorization_code' in client.allowedGrants %}
+        <div class="rounded-lg border border-border bg-card p-6 space-y-3">
+            <h2 class="text-base font-medium text-foreground">Authorization Code + PKCE</h2>
+            <p class="text-sm text-muted-foreground">
+                Redirect users to <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">{{ app.request.schemeAndHttpHost }}/oauth/authorize</code>
+                with <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">response_type=code</code>, a generated PKCE
+                <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">code_challenge</code> (S256), and one of your registered redirect URIs.
+            </p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
