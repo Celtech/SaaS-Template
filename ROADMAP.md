@@ -8,7 +8,7 @@
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language / Framework | PHP 8.4 + Symfony 8 | Latest stable; required by Symfony 8 |
+| Language / Framework | PHP 8.5 + Symfony 8 | Latest stable; required by Symfony 8 |
 | App Server | FrankenPHP (worker mode) | Built-in Caddy, no nginx, Symfony-recommended, better throughput |
 | Database | PostgreSQL 17 | RLS for tenant isolation, pgaudit (SOC2), JSONB, UUID native, Citus sharding path |
 | ORM | Doctrine ORM | Migrations, type system, UUID v7 support |

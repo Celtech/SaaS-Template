@@ -4,7 +4,7 @@ A production-ready, compliance-aware SaaS starter built on Symfony 8, FrankenPHP
 
 ## Stack
 
-PHP 8.3 · Symfony 8 · FrankenPHP · PostgreSQL · Valkey · Tailwind CSS v4 · Stripe · Docker
+PHP 8.5 · Symfony 8 · FrankenPHP · PostgreSQL · Valkey · Tailwind CSS v4 · Stripe · Docker
 
 ## Run locally
 
