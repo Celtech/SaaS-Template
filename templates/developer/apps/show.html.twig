@@ -1,0 +1,137 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}{{ client.name }}{% endblock %}
+
+{% block main %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <a href="{{ path('developer_apps_index') }}" class="text-sm text-muted-foreground hover:text-foreground">← OAuth Applications</a>
+            <h1 class="mt-2 text-2xl font-semibold text-foreground">{{ client.name }}</h1>
+            {% if client.description %}
+                <p class="mt-1 text-sm text-muted-foreground">{{ client.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ path('developer_apps_edit', {id: client.id}) }}"
+               class="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">
+                Edit
+            </a>
+            <form method="POST" action="{{ path('developer_apps_delete', {id: client.id}) }}"
+                  onsubmit="return confirm('Delete this application? All issued tokens will stop working.')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_client_' ~ client.id) }}">
+                <button type="submit"
+                        class="rounded-md border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-md px-4 py-3 text-sm
+                {{ type == 'error' ? 'bg-destructive/10 text-destructive' :
+                   type == 'warning' ? 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                       'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if plainSecret is not null %}
+        <div class="rounded-lg border border-yellow-300 bg-yellow-50 p-4 dark:bg-yellow-900/20 dark:border-yellow-700">
+            <div class="flex items-start gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div class="space-y-2 flex-1">
+                    <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">Save your client secret — it won't be shown again.</p>
+                    <code class="block rounded bg-yellow-100 dark:bg-yellow-900/40 px-3 py-2 font-mono text-sm text-yellow-900 dark:text-yellow-200 break-all">{{ plainSecret }}</code>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+        <h2 class="text-base font-medium text-foreground">Credentials</h2>
+
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Client ID</p>
+                <code class="mt-1 block rounded bg-muted px-3 py-2 font-mono text-sm text-foreground break-all">{{ client.clientId }}</code>
+            </div>
+            <div>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Client Secret</p>
+                    <form method="POST" action="{{ path('developer_apps_regenerate_secret', {id: client.id}) }}"
+                          onsubmit="return confirm('Regenerate the client secret? Your existing integrations will break until updated.')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('regenerate_secret_' ~ client.id) }}">
+                        <button type="submit" class="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                            Regenerate
+                        </button>
+                    </form>
+                </div>
+                <div class="mt-1 flex items-center gap-2 rounded bg-muted px-3 py-2">
+                    <span class="font-mono text-sm text-muted-foreground tracking-widest">••••••••••••••••••••••••••••••••</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+        <h2 class="text-base font-medium text-foreground">Configuration</h2>
+        <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div>
+                <dt class="text-muted-foreground">Grant types</dt>
+                <dd class="mt-1 flex flex-wrap gap-1">
+                    {% for grant in client.allowedGrants %}
+                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs">
+                            {% if grant == 'client_credentials' %}Client Credentials
+                            {% elseif grant == 'authorization_code' %}Authorization Code
+                            {% elseif grant == 'urn:ietf:params:oauth:grant-type:device_code' %}Device Authorization
+                            {% elseif grant == 'refresh_token' %}Refresh Token
+                            {% else %}{{ grant }}{% endif %}
+                        </span>
+                    {% else %}
+                        <span class="text-muted-foreground">None</span>
+                    {% endfor %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">Scopes</dt>
+                <dd class="mt-1 flex flex-wrap gap-1">
+                    {% for scope in client.allowedScopes %}
+                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 font-mono text-xs">{{ scope }}</span>
+                    {% else %}
+                        <span class="text-muted-foreground">None</span>
+                    {% endfor %}
+                </dd>
+            </div>
+            {% if client.redirectUris is not empty %}
+                <div class="col-span-2">
+                    <dt class="text-muted-foreground">Redirect URIs</dt>
+                    <dd class="mt-1 space-y-1">
+                        {% for uri in client.redirectUris %}
+                            <code class="block rounded bg-muted px-2 py-0.5 font-mono text-xs">{{ uri }}</code>
+                        {% endfor %}
+                    </dd>
+                </div>
+            {% endif %}
+            <div>
+                <dt class="text-muted-foreground">Created</dt>
+                <dd class="mt-1 font-medium">{{ client.createdAt|date('M j, Y') }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-6 space-y-3">
+        <h2 class="text-base font-medium text-foreground">Example request</h2>
+        <p class="text-sm text-muted-foreground">Request an access token using Client Credentials:</p>
+        <pre class="overflow-x-auto rounded bg-muted px-4 py-3 font-mono text-xs text-foreground">curl -X POST {{ app.request.schemeAndHttpHost }}/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id={{ client.clientId }}" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "scope=api:read"</pre>
+    </div>
+</div>
+{% endblock %}

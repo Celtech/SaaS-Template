@@ -1,0 +1,87 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}New Application{% endblock %}
+
+{% block main %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div>
+        <a href="{{ path('developer_apps_index') }}" class="text-sm text-muted-foreground hover:text-foreground">← OAuth Applications</a>
+        <h1 class="mt-2 text-2xl font-semibold text-foreground">New Application</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Register an OAuth 2.0 client for your integration.</p>
+    </div>
+
+    {{ form_start(form, {attr: {class: 'space-y-6', novalidate: 'novalidate'}}) }}
+
+        {% if not form.vars.valid and form.vars.submitted %}
+            <div class="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                Please fix the errors below.
+            </div>
+        {% endif %}
+
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+            <h2 class="text-base font-medium text-foreground">Basic information</h2>
+
+            <div class="space-y-1">
+                {{ form_label(form.name, null, {label_attr: {class: 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(form.name, {attr: {class: 'mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+                {{ form_errors(form.name) }}
+            </div>
+
+            <div class="space-y-1">
+                {{ form_label(form.description, null, {label_attr: {class: 'block text-sm font-medium text-foreground'}}) }}
+                {{ form_widget(form.description, {attr: {class: 'mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+                {{ form_errors(form.description) }}
+            </div>
+        </div>
+
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+            <h2 class="text-base font-medium text-foreground">Grant types</h2>
+            <p class="text-sm text-muted-foreground">Select the OAuth flows this application will use.</p>
+            <div class="space-y-2">
+                {% for child in form.allowedGrants %}
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        {{ form_widget(child, {attr: {class: 'mt-0.5 h-4 w-4 rounded border-input text-primary focus:ring-ring'}}) }}
+                        <span class="text-sm text-foreground">{{ child.vars.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {{ form_errors(form.allowedGrants) }}
+        </div>
+
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+            <h2 class="text-base font-medium text-foreground">Scopes</h2>
+            <p class="text-sm text-muted-foreground">Limit which data this application can access.</p>
+            <div class="grid grid-cols-2 gap-2">
+                {% for child in form.allowedScopes %}
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form_widget(child, {attr: {class: 'h-4 w-4 rounded border-input text-primary focus:ring-ring'}}) }}
+                        <span class="text-sm text-foreground">{{ child.vars.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {{ form_errors(form.allowedScopes) }}
+        </div>
+
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4">
+            <h2 class="text-base font-medium text-foreground">Redirect URIs</h2>
+            <p class="text-sm text-muted-foreground">Required for Authorization Code flow. One URI per line.</p>
+            <div class="space-y-1">
+                {{ form_widget(form.redirectUrisRaw, {attr: {class: 'block w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'}}) }}
+                {{ form_errors(form.redirectUrisRaw) }}
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3">
+            <a href="{{ path('developer_apps_index') }}"
+               class="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                Create Application
+            </button>
+        </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

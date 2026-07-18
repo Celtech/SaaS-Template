@@ -29,6 +29,13 @@ framework:
                 provider: '%env(REDIS_DSN)%'
                 default_lifetime: 3600
 
+            # Tracks OAuth access token validity. Avoids a DB hit on every API
+            # request. Revoked tokens are marked with a 5-minute TTL tombstone.
+            cache.oauth_tokens:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_DSN)%'
+                default_lifetime: 3600
+
 when@test:
     framework:
         cache:
@@ -37,5 +44,8 @@ when@test:
                     adapter: cache.adapter.array
                     provider: ~
                 cache.entitlements:
+                    adapter: cache.adapter.array
+                    provider: ~
+                cache.oauth_tokens:
                     adapter: cache.adapter.array
                     provider: ~
