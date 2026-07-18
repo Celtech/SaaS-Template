@@ -70,6 +70,15 @@ use Symfony\Component\Uid\Uuid;
  * IMPERSONATION EVENTS  (logImpersonation)
  * Admin impersonation session lifecycle.
  * Pattern: impersonation.<verb>  e.g. impersonation.started, impersonation.ended
+ *
+ * OAUTH EVENTS  (logOAuthEvent)
+ * Developer-area OAuth client management and end-user consent decisions.
+ *
+ *   oauth.client.created              — OAuth application registered (context: name, grants, scopes)
+ *   oauth.client.secret_regenerated    — client secret rotated
+ *   oauth.client.deleted               — OAuth application removed
+ *   oauth.authorization.granted        — user approved a client's consent request (context: scopes)
+ *   oauth.authorization.denied         — user rejected a client's consent request
  */
 class AuditLogger
 {
@@ -161,6 +170,22 @@ class AuditLogger
         array $context = [],
     ): void {
         $this->write('security.' . $action, $actorId, 'user', null, null, null, empty($context) ? null : $context);
+    }
+
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
+    public function logOAuthEvent(
+        string $action,
+        string $subjectId,
+        string $subjectType,
+        ?array $oldValue = null,
+        ?array $newValue = null,
+        ?string $actorId = null,
+        string $actorType = 'user',
+    ): void {
+        $this->write('oauth.' . $action, $actorId, $actorType, $subjectId, $subjectType, $oldValue, $newValue);
     }
 
     /**
