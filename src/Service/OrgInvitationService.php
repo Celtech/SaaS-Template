@@ -8,10 +8,12 @@ use App\Entity\Organization;
 use App\Entity\OrgInvitation;
 use App\Entity\User;
 use App\Entity\UserRole;
+use App\Enum\WebhookEvent;
 use App\Message\Mail\SendMailMessage;
 use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
+use App\Service\Webhook\WebhookDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -26,6 +28,7 @@ final class OrgInvitationService
         private readonly RoleRepository $roleRepository,
         private readonly MessageBusInterface $bus,
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly WebhookDispatcher $webhookDispatcher,
     ) {
     }
 
@@ -63,6 +66,12 @@ final class OrgInvitationService
             ],
         ));
 
+        $this->webhookDispatcher->dispatch($org, WebhookEvent::OrgMemberInvited, [
+            'email' => $email,
+            'invited_by' => $invitedBy->getId()->toRfc4122(),
+            'organization_id' => $org->getId()->toRfc4122(),
+        ]);
+
         return $invitation;
     }
 
@@ -79,5 +88,11 @@ final class OrgInvitationService
 
         $invitation->accept();
         $this->em->flush();
+
+        $this->webhookDispatcher->dispatch($org, WebhookEvent::OrgMemberJoined, [
+            'user_id' => $user->getId()->toRfc4122(),
+            'email' => $user->getEmail(),
+            'organization_id' => $org->getId()->toRfc4122(),
+        ]);
     }
 }

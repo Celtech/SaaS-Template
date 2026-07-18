@@ -9,6 +9,7 @@
 parameters:
     billing.enabled: '%env(bool:BILLING_ENABLED)%'
     plan_token.secret: '%env(PLAN_TOKEN_SECRET)%'
+    webhook_secret.encryption_key: '%env(WEBHOOK_SECRET_ENCRYPTION_KEY)%'
 
 services:
     # default configuration for services in *this* file
@@ -37,6 +38,10 @@ services:
     App\Service\Billing\PlanTokenService:
         arguments:
             $secret: '%plan_token.secret%'
+
+    App\Service\Webhook\WebhookSecretCrypto:
+        arguments:
+            $encryptionKey: '%webhook_secret.encryption_key%'
 
     _instanceof:
         App\Security\Enforcement\SecurityEnforcementInterface:
