@@ -7,8 +7,10 @@ namespace App\Controller\OAuth;
 use App\Security\OAuth\OAuthScope;
 use App\Service\OAuth\ClientCredentialsExtractor;
 use App\Service\OAuth\ClientService;
+use App\Service\OAuth\DeviceCodeService;
 use App\Service\OAuth\Grant\AuthorizationCodeGrant;
 use App\Service\OAuth\Grant\ClientCredentialsGrant;
+use App\Service\OAuth\Grant\DeviceCodeGrant;
 use App\Service\OAuth\TokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +25,8 @@ final class OAuthController extends AbstractController
     public function __construct(
         private readonly ClientCredentialsGrant $clientCredentialsGrant,
         private readonly AuthorizationCodeGrant $authorizationCodeGrant,
+        private readonly DeviceCodeGrant $deviceCodeGrant,
+        private readonly DeviceCodeService $deviceCodeService,
         private readonly TokenService $tokenService,
         private readonly ClientService $clientService,
         private readonly ClientCredentialsExtractor $credentialsExtractor,
@@ -70,12 +74,68 @@ final class OAuthController extends AbstractController
         return match ($grantType) {
             'client_credentials' => $this->clientCredentialsGrant->handle($request),
             'authorization_code' => $this->authorizationCodeGrant->handle($request),
+            'urn:ietf:params:oauth:grant-type:device_code' => $this->deviceCodeGrant->handle($request),
             'refresh_token' => $this->handleRefreshToken($request),
             default => new JsonResponse(
                 ['error' => 'unsupported_grant_type', 'error_description' => "Grant type '{$grantType}' is not supported."],
                 Response::HTTP_BAD_REQUEST,
             ),
         };
+    }
+
+    /** RFC 8628 §3.1 — Device Authorization endpoint. Issues a device_code/user_code pair. */
+    #[Route('/oauth/device/authorization', name: 'oauth_device_authorization', methods: ['POST'])]
+    public function deviceAuthorization(Request $request): JsonResponse
+    {
+        [$clientId, $clientSecret] = $this->credentialsExtractor->extract($request);
+
+        if ($clientId === null) {
+            return new JsonResponse(['error' => 'invalid_client', 'error_description' => 'client_id is required.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $client = $this->clientService->findByClientId($clientId);
+
+        if ($client === null) {
+            return new JsonResponse(['error' => 'invalid_client', 'error_description' => 'Invalid client.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($client->isConfidential()) {
+            if ($clientSecret === null || $this->clientService->validateClientCredentials($clientId, $clientSecret) === null) {
+                return new JsonResponse(['error' => 'invalid_client', 'error_description' => 'Invalid client credentials.'], Response::HTTP_UNAUTHORIZED);
+            }
+        }
+
+        if (!$client->supportsGrant('urn:ietf:params:oauth:grant-type:device_code')) {
+            return new JsonResponse(
+                ['error' => 'unauthorized_client', 'error_description' => 'This client is not authorized for the device_code grant.'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        $requestedScopes = $this->parseScopes($request->request->getString('scope'));
+
+        if (!OAuthScope::validSubset($requestedScopes)) {
+            return new JsonResponse(['error' => 'invalid_scope', 'error_description' => 'One or more requested scopes are invalid.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $scopes = $requestedScopes !== [] ? $requestedScopes : $client->getAllowedScopes();
+
+        if (!$client->scopesAreAllowed($scopes)) {
+            return new JsonResponse(['error' => 'invalid_scope', 'error_description' => 'One or more requested scopes are not allowed for this client.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        [$deviceCode, $plainDeviceCode, $plainUserCode] = $this->deviceCodeService->issue($client, $scopes);
+
+        $verificationUri = $this->router->generate('oauth_device_verify', [], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        return new JsonResponse([
+            'device_code' => $plainDeviceCode,
+            'user_code' => $plainUserCode,
+            'verification_uri' => $verificationUri,
+            'verification_uri_complete' => $verificationUri . '?user_code=' . urlencode($plainUserCode),
+            'expires_in' => DeviceCodeService::deviceCodeTtl(),
+            'interval' => $deviceCode->getInterval(),
+        ]);
     }
 
     /** RFC 7009 — Token revocation. */
@@ -188,5 +248,15 @@ final class OAuthController extends AbstractController
             'expires_in' => TokenService::accessTokenTtl(),
             'refresh_token' => $newPlainRefresh,
         ]);
+    }
+
+    /** @return string[] */
+    private function parseScopes(string $scopeString): array
+    {
+        if ($scopeString === '') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(explode(' ', $scopeString))));
     }
 }
