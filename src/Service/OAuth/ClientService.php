@@ -7,13 +7,20 @@ namespace App\Service\OAuth;
 use App\Entity\OAuthClient;
 use App\Entity\Organization;
 use App\Repository\OAuthClientRepository;
+use App\Service\Audit\AuditLogger;
 
 class ClientService
 {
     public function __construct(
         private readonly OAuthClientRepository $clients,
         private readonly TokenGenerator $generator,
+        private readonly AuditLogger $auditLogger,
     ) {
+    }
+
+    public function findByClientId(string $clientId): ?OAuthClient
+    {
+        return $this->clients->findByClientId($clientId);
     }
 
     /**
@@ -33,6 +40,7 @@ class ClientService
         array $redirectUris = [],
         ?Organization $organization = null,
         ?string $description = null,
+        ?string $actorId = null,
     ): array {
         $clientId = $this->generator->generateClientId();
         $plainSecret = $this->generator->generateClientSecret();
@@ -46,19 +54,56 @@ class ClientService
 
         $this->clients->save($client, flush: true);
 
+        if ($actorId !== null) {
+            $this->auditLogger->logOAuthEvent(
+                'client.created',
+                $client->getId()->toRfc4122(),
+                'oauth_client',
+                newValue: ['name' => $name, 'grants' => $grants, 'scopes' => $scopes],
+                actorId: $actorId,
+            );
+        }
+
         return [$client, $plainSecret];
     }
 
     /**
      * Rotates the client secret. Returns the new plaintext secret (shown once).
      */
-    public function regenerateSecret(OAuthClient $client): string
+    public function regenerateSecret(OAuthClient $client, ?string $actorId = null): string
     {
         $plainSecret = $this->generator->generateClientSecret();
         $client->setClientSecretHash($this->generator->hashToken($plainSecret));
         $this->clients->save($client, flush: true);
 
+        if ($actorId !== null) {
+            $this->auditLogger->logOAuthEvent(
+                'client.secret_regenerated',
+                $client->getId()->toRfc4122(),
+                'oauth_client',
+                actorId: $actorId,
+            );
+        }
+
         return $plainSecret;
+    }
+
+    public function deleteClient(OAuthClient $client, ?string $actorId = null): void
+    {
+        $clientId = $client->getId()->toRfc4122();
+        $name = $client->getName();
+
+        $this->clients->remove($client, flush: true);
+
+        if ($actorId !== null) {
+            $this->auditLogger->logOAuthEvent(
+                'client.deleted',
+                $clientId,
+                'oauth_client',
+                oldValue: ['name' => $name],
+                actorId: $actorId,
+            );
+        }
     }
 
     public function validateClientCredentials(string $clientId, string $clientSecret): ?OAuthClient

@@ -7,6 +7,7 @@ namespace App\Controller\OAuth;
 use App\Security\OAuth\OAuthScope;
 use App\Service\OAuth\ClientCredentialsExtractor;
 use App\Service\OAuth\ClientService;
+use App\Service\OAuth\Grant\AuthorizationCodeGrant;
 use App\Service\OAuth\Grant\ClientCredentialsGrant;
 use App\Service\OAuth\TokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +22,7 @@ final class OAuthController extends AbstractController
 {
     public function __construct(
         private readonly ClientCredentialsGrant $clientCredentialsGrant,
+        private readonly AuthorizationCodeGrant $authorizationCodeGrant,
         private readonly TokenService $tokenService,
         private readonly ClientService $clientService,
         private readonly ClientCredentialsExtractor $credentialsExtractor,
@@ -67,6 +69,7 @@ final class OAuthController extends AbstractController
 
         return match ($grantType) {
             'client_credentials' => $this->clientCredentialsGrant->handle($request),
+            'authorization_code' => $this->authorizationCodeGrant->handle($request),
             'refresh_token' => $this->handleRefreshToken($request),
             default => new JsonResponse(
                 ['error' => 'unsupported_grant_type', 'error_description' => "Grant type '{$grantType}' is not supported."],

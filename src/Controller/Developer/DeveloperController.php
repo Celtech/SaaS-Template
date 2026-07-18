@@ -67,6 +67,7 @@ final class DeveloperController extends AbstractController
                 redirectUris: array_values($uris),
                 organization: $org,
                 description: $data['description'] ?? null,
+                actorId: $user->getId()->toRfc4122(),
             );
 
             // Store secret in session flash so we can show it once on the next page.
@@ -142,7 +143,9 @@ final class DeveloperController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $plainSecret = $clientService->regenerateSecret($client);
+        /** @var User $user */
+        $user = $this->getUser();
+        $plainSecret = $clientService->regenerateSecret($client, actorId: $user->getId()->toRfc4122());
         $request->getSession()->set('_oauth_new_secret_' . $client->getId()->toRfc4122(), $plainSecret);
 
         $this->addFlash('warning', 'Secret regenerated. Your previous secret is now invalid.');
@@ -151,7 +154,7 @@ final class DeveloperController extends AbstractController
     }
 
     #[Route('/apps/{id}/delete', name: 'developer_apps_delete', methods: ['POST'])]
-    public function deleteApp(OAuthClient $client, Request $request, OAuthClientRepository $clients): Response
+    public function deleteApp(OAuthClient $client, Request $request, ClientService $clientService): Response
     {
         $this->denyAccessUnlessOrgOwnsClient($client);
 
@@ -159,7 +162,9 @@ final class DeveloperController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $clients->remove($client, flush: true);
+        /** @var User $user */
+        $user = $this->getUser();
+        $clientService->deleteClient($client, actorId: $user->getId()->toRfc4122());
         $this->addFlash('success', 'Application deleted.');
 
         return $this->redirectToRoute('developer_apps_index');
