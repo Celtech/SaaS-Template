@@ -8,9 +8,11 @@ use App\Entity\Organization;
 use App\Entity\Plan;
 use App\Entity\Subscription;
 use App\Entity\SubscriptionStatus;
+use App\Enum\WebhookEvent;
 use App\Repository\SubscriptionRepository;
 use App\Service\Audit\AuditLogger;
 use App\Service\EntitlementService;
+use App\Service\Webhook\WebhookDispatcher;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Invoice as StripeInvoice;
@@ -30,6 +32,7 @@ final class SubscriptionManager
         private readonly SubscriptionRepository $subscriptionRepository,
         private readonly AuditLogger $auditLogger,
         private readonly EntitlementService $entitlementService,
+        private readonly WebhookDispatcher $webhookDispatcher,
     ) {
     }
 
@@ -99,6 +102,22 @@ final class SubscriptionManager
             $previousStatus !== null ? ['status' => $previousStatus->value] : null,
             ['status' => $subscription->getStatus()->value, 'plan' => $plan->getSlug()],
         );
+
+        $becameCancelled = $subscription->getStatus() === SubscriptionStatus::Canceled
+            && $previousStatus !== SubscriptionStatus::Canceled;
+
+        $webhookEvent = match (true) {
+            $becameCancelled => WebhookEvent::BillingSubscriptionCancelled,
+            $isNew => WebhookEvent::BillingSubscriptionCreated,
+            default => WebhookEvent::BillingSubscriptionUpdated,
+        };
+
+        $this->webhookDispatcher->dispatch($org, $webhookEvent, [
+            'subscription_id' => $subscription->getId()->toRfc4122(),
+            'organization_id' => $org->getId()->toRfc4122(),
+            'status' => $subscription->getStatus()->value,
+            'plan' => $plan->getSlug(),
+        ]);
 
         return $subscription;
     }
