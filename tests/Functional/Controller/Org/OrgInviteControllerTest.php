@@ -149,7 +149,6 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $invitation = new OrgInvitation($org, 'expired@example.com', $owner);
         // Expire it by setting expiresAt in the past via reflection
         $ref = new ReflectionProperty(OrgInvitation::class, 'expiresAt');
-        $ref->setAccessible(true);
         $ref->setValue($invitation, new DateTimeImmutable('-1 hour'));
         $this->em->persist($invitation);
         $this->em->flush();

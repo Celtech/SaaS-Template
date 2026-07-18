@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 $finder = PhpCsFixer\Finder::create()
-    ->in([__DIR__.'/src', __DIR__.'/tests'])
+    ->in([__DIR__ . '/src', __DIR__ . '/tests'])
     ->exclude(['var', 'vendor']);
 
-return (new PhpCsFixer\Config())
+return new PhpCsFixer\Config()
     ->setRiskyAllowed(true)
     ->setRules([
         '@Symfony' => true,
         '@Symfony:risky' => true,
-        '@PHP84Migration' => true,
+        '@PHP8x5Migration' => true,
         '@PHP80Migration:risky' => true,
         'declare_strict_types' => true,
         'strict_param' => true,
