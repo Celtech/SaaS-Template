@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller\OAuth;
 
+use App\Entity\OAuthAuthorizationCode;
+use App\Entity\OAuthClient;
+use App\Entity\Organization;
 use App\Service\OAuth\ClientService;
+use App\Service\OAuth\PkceVerifier;
+use App\Service\OAuth\TokenGenerator;
 use App\Tests\FunctionalTestCase;
+use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Test;
 
 final class OAuthControllerTest extends FunctionalTestCase
@@ -191,14 +197,153 @@ final class OAuthControllerTest extends FunctionalTestCase
         $this->assertFalse($data['active']);
     }
 
+    #[Test]
+    public function authorizationCodeGrantExchangesCodeForTokens(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-authz-exchange@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code', 'refresh_token'],
+            redirectUris: ['https://app.example.com/callback'],
+        );
+        [$plainCode, $verifier] = $this->createAuthorizationCode($client, $owner, 'https://app.example.com/callback');
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'authorization_code',
+            'code' => $plainCode,
+            'redirect_uri' => 'https://app.example.com/callback',
+            'code_verifier' => $verifier,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('access_token', $data);
+        $this->assertArrayHasKey('refresh_token', $data);
+    }
+
+    #[Test]
+    public function authorizationCodeGrantRejectsWrongVerifier(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-authz-wrong-verifier@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code'],
+            redirectUris: ['https://app.example.com/callback'],
+        );
+        [$plainCode] = $this->createAuthorizationCode($client, $owner, 'https://app.example.com/callback');
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'authorization_code',
+            'code' => $plainCode,
+            'redirect_uri' => 'https://app.example.com/callback',
+            'code_verifier' => 'the-wrong-verifier',
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $data['error']);
+    }
+
+    #[Test]
+    public function authorizationCodeGrantRejectsMismatchedRedirectUri(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-authz-wrong-redirect@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code'],
+            redirectUris: ['https://app.example.com/callback', 'https://app.example.com/other'],
+        );
+        [$plainCode, $verifier] = $this->createAuthorizationCode($client, $owner, 'https://app.example.com/callback');
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'authorization_code',
+            'code' => $plainCode,
+            'redirect_uri' => 'https://app.example.com/other',
+            'code_verifier' => $verifier,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $data['error']);
+    }
+
+    #[Test]
+    public function authorizationCodeGrantRejectsReusedCode(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-authz-reuse@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code'],
+            redirectUris: ['https://app.example.com/callback'],
+        );
+        [$plainCode, $verifier] = $this->createAuthorizationCode($client, $owner, 'https://app.example.com/callback');
+
+        $params = [
+            'grant_type' => 'authorization_code',
+            'code' => $plainCode,
+            'redirect_uri' => 'https://app.example.com/callback',
+            'code_verifier' => $verifier,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ];
+
+        $this->client->request('POST', '/oauth/token', $params);
+        $this->assertResponseIsSuccessful();
+
+        $this->client->request('POST', '/oauth/token', $params);
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $data['error']);
+    }
+
+    #[Test]
+    public function authorizationCodeGrantRejectsCodeIssuedToAnotherClient(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-authz-cross-client@example.com');
+        [$clientA] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code'],
+            redirectUris: ['https://app.example.com/callback'],
+            name: 'Client A',
+        );
+        [$clientB, $secretB] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['authorization_code'],
+            redirectUris: ['https://app.example.com/callback'],
+            name: 'Client B',
+        );
+        [$plainCode, $verifier] = $this->createAuthorizationCode($clientA, $owner, 'https://app.example.com/callback');
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'authorization_code',
+            'code' => $plainCode,
+            'redirect_uri' => 'https://app.example.com/callback',
+            'code_verifier' => $verifier,
+            'client_id' => $clientB->getClientId(),
+            'client_secret' => $secretB,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $data['error']);
+    }
+
     /**
      * @param  string[]  $grants
+     * @param  string[]  $redirectUris
      *
-     * @return array{0: \App\Entity\OAuthClient, 1: string}
+     * @return array{0: OAuthClient, 1: string}
      */
     private function createOAuthClient(
-        ?\App\Entity\Organization $org,
+        ?Organization $org,
         array $grants,
+        array $redirectUris = [],
         string $name = 'Test App',
     ): array {
         $this->assertNotNull($org);
@@ -208,11 +353,37 @@ final class OAuthControllerTest extends FunctionalTestCase
             name: $name,
             grants: $grants,
             scopes: ['api:read'],
+            redirectUris: $redirectUris,
             organization: $org,
         );
     }
 
-    private function issueTokenPair(\App\Entity\OAuthClient $client, string $secret): string
+    /** @return array{0: string, 1: string} plain code, code verifier */
+    private function createAuthorizationCode(OAuthClient $client, \App\Entity\User $user, string $redirectUri): array
+    {
+        $generator = static::getContainer()->get(TokenGenerator::class);
+        $pkce = static::getContainer()->get(PkceVerifier::class);
+
+        $verifier = $generator->generateToken();
+        $plainCode = $generator->generateToken();
+
+        $authorizationCode = new OAuthAuthorizationCode(
+            codeHash: $generator->hashToken($plainCode),
+            client: $client,
+            user: $user,
+            organization: $user->getOrganization(),
+            scopes: ['api:read'],
+            redirectUri: $redirectUri,
+            codeChallenge: $pkce->challengeFromVerifier($verifier),
+            expiresAt: new DateTimeImmutable()->modify('+60 seconds'),
+        );
+        $this->em->persist($authorizationCode);
+        $this->em->flush();
+
+        return [$plainCode, $verifier];
+    }
+
+    private function issueTokenPair(OAuthClient $client, string $secret): string
     {
         $this->client->request('POST', '/oauth/token', [
             'grant_type' => 'client_credentials',
