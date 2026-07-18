@@ -44,8 +44,8 @@
         "symfony/yaml": "8.0.*",
         "symfonycasts/tailwind-bundle": "*",
         "twig/extra-bundle": "*",
-        "twig/twig": "*",
-        "web-auth/webauthn-lib": "^5.3"
+        "twig/twig": ">=3.28",
+        "web-auth/webauthn-lib": "^5.3.5"
     },
     "config": {
         "allow-plugins": {
