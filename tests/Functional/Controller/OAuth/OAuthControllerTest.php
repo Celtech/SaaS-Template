@@ -6,8 +6,10 @@ namespace App\Tests\Functional\Controller\OAuth;
 
 use App\Entity\OAuthAuthorizationCode;
 use App\Entity\OAuthClient;
+use App\Entity\OAuthDeviceCode;
 use App\Entity\Organization;
 use App\Service\OAuth\ClientService;
+use App\Service\OAuth\DeviceCodeService;
 use App\Service\OAuth\PkceVerifier;
 use App\Service\OAuth\TokenGenerator;
 use App\Tests\FunctionalTestCase;
@@ -334,6 +336,179 @@ final class OAuthControllerTest extends FunctionalTestCase
         $this->assertSame('invalid_grant', $data['error']);
     }
 
+    #[Test]
+    public function deviceAuthorizationIssuesDeviceAndUserCode(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-issue@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+        );
+
+        $this->client->request('POST', '/oauth/device/authorization', [
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+            'scope' => 'api:read',
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('device_code', $data);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{4}-[A-Z0-9]{4}$/', $data['user_code']);
+        $this->assertStringEndsWith('/oauth/device', $data['verification_uri']);
+        $this->assertStringContainsString('user_code=' . $data['user_code'], $data['verification_uri_complete']);
+        $this->assertSame(5, $data['interval']);
+    }
+
+    #[Test]
+    public function deviceAuthorizationRejectsClientWithoutGrant(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-unauthorized@example.com');
+        [$client, $secret] = $this->createOAuthClient($owner->getOrganization(), grants: ['client_credentials']);
+
+        $this->client->request('POST', '/oauth/device/authorization', [
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('unauthorized_client', $data['error']);
+    }
+
+    #[Test]
+    public function deviceCodeGrantReturnsAuthorizationPendingBeforeApproval(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-pending@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+        );
+        [, $plainDeviceCode] = $this->createDeviceCode($client);
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:device_code',
+            'device_code' => $plainDeviceCode,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('authorization_pending', $data['error']);
+    }
+
+    #[Test]
+    public function deviceCodeGrantReturnsSlowDownWhenPollingTooFast(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-slowdown@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+        );
+        [, $plainDeviceCode] = $this->createDeviceCode($client);
+
+        $params = [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:device_code',
+            'device_code' => $plainDeviceCode,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ];
+
+        $this->client->request('POST', '/oauth/token', $params);
+        $this->assertSame('authorization_pending', json_decode((string) $this->client->getResponse()->getContent(), true)['error']);
+
+        $this->client->request('POST', '/oauth/token', $params);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('slow_down', $data['error']);
+    }
+
+    #[Test]
+    public function deviceCodeGrantSucceedsAfterApprovalAndRejectsReuse(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-approved@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
+        );
+        [$deviceCode, $plainDeviceCode] = $this->createDeviceCode($client);
+
+        $deviceCodeService = static::getContainer()->get(DeviceCodeService::class);
+        $deviceCodeService->approve($deviceCode, $owner, $owner->getOrganization());
+
+        $params = [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:device_code',
+            'device_code' => $plainDeviceCode,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ];
+
+        $this->client->request('POST', '/oauth/token', $params);
+        $this->assertResponseIsSuccessful();
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('access_token', $data);
+        $this->assertArrayHasKey('refresh_token', $data);
+
+        // The device_code is single-use: a second exchange must fail.
+        $this->client->request('POST', '/oauth/token', $params);
+        $this->assertResponseStatusCodeSame(400);
+        $second = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $second['error']);
+    }
+
+    #[Test]
+    public function deviceCodeGrantReturnsAccessDeniedAfterDenial(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-denied@example.com');
+        [$client, $secret] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+        );
+        [$deviceCode, $plainDeviceCode] = $this->createDeviceCode($client);
+
+        $deviceCodeService = static::getContainer()->get(DeviceCodeService::class);
+        $deviceCodeService->deny($deviceCode);
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:device_code',
+            'device_code' => $plainDeviceCode,
+            'client_id' => $client->getClientId(),
+            'client_secret' => $secret,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('access_denied', $data['error']);
+    }
+
+    #[Test]
+    public function deviceCodeGrantRejectsCodeIssuedToAnotherClient(): void
+    {
+        $owner = $this->createUserWithOrg('oauth-device-cross-client@example.com');
+        [$clientA] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+            name: 'Device Client A',
+        );
+        [$clientB, $secretB] = $this->createOAuthClient(
+            $owner->getOrganization(),
+            grants: ['urn:ietf:params:oauth:grant-type:device_code'],
+            name: 'Device Client B',
+        );
+        [, $plainDeviceCode] = $this->createDeviceCode($clientA);
+
+        $this->client->request('POST', '/oauth/token', [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:device_code',
+            'device_code' => $plainDeviceCode,
+            'client_id' => $clientB->getClientId(),
+            'client_secret' => $secretB,
+        ]);
+
+        $this->assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertSame('invalid_grant', $data['error']);
+    }
+
     /**
      * @param  string[]  $grants
      * @param  string[]  $redirectUris
@@ -393,5 +568,15 @@ final class OAuthControllerTest extends FunctionalTestCase
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
 
         return $data['refresh_token'];
+    }
+
+    /** @return array{0: OAuthDeviceCode, 1: string} entity, plain device_code */
+    private function createDeviceCode(OAuthClient $client): array
+    {
+        $deviceCodeService = static::getContainer()->get(DeviceCodeService::class);
+
+        [$deviceCode, $plainDeviceCode] = $deviceCodeService->issue($client, ['api:read']);
+
+        return [$deviceCode, $plainDeviceCode];
     }
 }
