@@ -6,6 +6,7 @@ namespace App;
 
 use App\Message\Billing\EnforceGracePeriodMessage;
 use App\Message\Billing\ProcessExpiredTrialsMessage;
+use App\Message\Webhook\RetryDueWebhookDeliveriesMessage;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
 use Symfony\Component\Scheduler\Schedule as SymfonySchedule;
@@ -32,6 +33,10 @@ class Schedule implements ScheduleProviderInterface
             ->add(
                 // Daily at 01:15 UTC — cancel past_due subscriptions that have passed the grace period
                 RecurringMessage::cron('15 1 * * *', new EnforceGracePeriodMessage()),
+            )
+            ->add(
+                // Every minute — redeliver webhook events whose retry backoff has elapsed
+                RecurringMessage::every('1 minute', new RetryDueWebhookDeliveriesMessage()),
             )
         ;
     }

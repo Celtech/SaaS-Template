@@ -14,6 +14,7 @@ framework:
 
         routing:
             'App\Message\Webhook\DeliverWebhookMessage': async
+            'App\Message\Webhook\RetryDueWebhookDeliveriesMessage': async
             'App\Message\Mail\SendMailMessage': async
             'App\Message\User\AnonymizeUserMessage': async
             'App\Message\Billing\ProcessExpiredTrialsMessage': async

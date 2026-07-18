@@ -81,6 +81,14 @@ use Symfony\Component\Uid\Uuid;
  *   oauth.authorization.denied         — user rejected a client's consent request
  *   oauth.device_authorization.granted — user approved a device authorization request (context: scopes)
  *   oauth.device_authorization.denied  — user rejected a device authorization request
+ *
+ * WEBHOOK EVENTS  (logWebhookEvent)
+ * Outgoing webhook endpoint management in the developer area.
+ *
+ *   webhook.endpoint.created            — endpoint registered (context: url, events)
+ *   webhook.endpoint.updated            — url, events, or active state changed
+ *   webhook.endpoint.secret_regenerated — signing secret rotated
+ *   webhook.endpoint.deleted            — endpoint removed
  */
 class AuditLogger
 {
@@ -188,6 +196,20 @@ class AuditLogger
         string $actorType = 'user',
     ): void {
         $this->write('oauth.' . $action, $actorId, $actorType, $subjectId, $subjectType, $oldValue, $newValue);
+    }
+
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
+    public function logWebhookEvent(
+        string $action,
+        string $subjectId,
+        ?array $oldValue = null,
+        ?array $newValue = null,
+        ?string $actorId = null,
+    ): void {
+        $this->write('webhook.' . $action, $actorId, 'user', $subjectId, 'webhook_endpoint', $oldValue, $newValue);
     }
 
     /**
