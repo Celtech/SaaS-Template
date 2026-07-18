@@ -54,6 +54,11 @@
                            {{ cr starts with 'admin_audit_log' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
                         Audit Log
                     </a>
+                    <a href="{{ path('admin_webhooks_index') }}"
+                       class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                           {{ cr starts with 'admin_webhooks' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/50' }}">
+                        Webhooks
+                    </a>
                 </div>
             {% endblock %}
         {% else %}

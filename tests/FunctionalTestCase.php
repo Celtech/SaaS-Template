@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use App\Entity\User;
+use App\Security\Enforcement\AdminStepUpEnforcement;
 use App\Service\OrganizationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -72,5 +73,35 @@ abstract class FunctionalTestCase extends WebTestCase
         $orgService->createForUser($user, $orgName);
 
         return $user;
+    }
+
+    /** 2FA/TOTP is required for admin accounts (Phase 7a) — enabled here so tests don't get redirected to setup. */
+    protected function createSuperAdmin(
+        string $email = 'super-admin@example.com',
+        string $password = 'Password123!',
+        string $name = 'Super Admin',
+    ): User {
+        // Every user gets a personal org (this project's uniform tenancy invariant) —
+        // without one, OrgOnboardingSubscriber redirects every request to the wizard.
+        $user = $this->createUserWithOrg($email, $password, $name);
+        $user->setRoles(['ROLE_SUPER_ADMIN']);
+        $user->enableTotp('JBSWY3DPEHPK3PXP');
+        $this->em->flush();
+
+        return $user;
+    }
+
+    /**
+     * Logs in as a super admin and satisfies AdminStepUpEnforcement's freshness
+     * check so subsequent /admin/* requests aren't bounced back to re-authenticate.
+     */
+    protected function loginAsSuperAdminWithStepUpConfirmed(User $admin): void
+    {
+        $this->client->loginUser($admin);
+        $this->client->request('GET', '/');
+
+        $session = $this->client->getRequest()->getSession();
+        $session->set(AdminStepUpEnforcement::SESSION_KEY, time());
+        $session->save();
     }
 }
