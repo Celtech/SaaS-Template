@@ -1,0 +1,46 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Authorize application{% endblock %}
+
+{% block main %}
+<div class="max-w-md mx-auto space-y-6">
+    <div class="rounded-lg border border-border bg-card p-6 space-y-6">
+        <div class="text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            </div>
+            <h1 class="mt-4 text-lg font-semibold text-foreground">{{ client.name }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">wants to access your account</p>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-sm font-medium text-foreground">This will allow {{ client.name }} to:</p>
+            <ul class="space-y-1.5">
+                {% for scope in scopeEnums %}
+                    <li class="flex items-start gap-2 text-sm text-muted-foreground">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                        {{ scope.description }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <form method="POST" action="{{ path('oauth_authorize_decide') }}" class="flex gap-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('oauth_authorize') }}">
+            <input type="hidden" name="client_id" value="{{ client.clientId }}">
+            <input type="hidden" name="redirect_uri" value="{{ redirectUri }}">
+            <input type="hidden" name="state" value="{{ state }}">
+            <input type="hidden" name="scope" value="{{ scopeParam }}">
+            <input type="hidden" name="code_challenge" value="{{ codeChallenge }}">
+            <button type="submit" name="decision" value="deny"
+                    class="flex-1 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">
+                Deny
+            </button>
+            <button type="submit" name="decision" value="approve"
+                    class="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                Approve
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
