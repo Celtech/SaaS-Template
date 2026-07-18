@@ -1,0 +1,33 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}Connect a device{% endblock %}
+
+{% block main %}
+<div class="max-w-md mx-auto space-y-6">
+    <div class="rounded-lg border border-border bg-card p-6 space-y-6">
+        <div class="text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h1 class="mt-4 text-lg font-semibold text-foreground">Connect a device</h1>
+            <p class="mt-1 text-sm text-muted-foreground">Enter the code shown on your device.</p>
+        </div>
+
+        {% if error is defined %}
+            <div class="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="GET" action="{{ path('oauth_device_verify') }}" class="space-y-4">
+            <input type="text" name="user_code" required autofocus autocomplete="off"
+                   placeholder="XXXX-XXXX"
+                   class="block w-full rounded-md border border-input bg-background px-3 py-2 text-center font-mono text-lg tracking-widest uppercase placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <button type="submit"
+                    class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                Continue
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

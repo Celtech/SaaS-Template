@@ -1,0 +1,19 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block title %}{{ approved ? 'Device connected' : 'Request denied' }}{% endblock %}
+
+{% block main %}
+<div class="max-w-md mx-auto">
+    <div class="rounded-lg border border-dashed border-border bg-card p-12 text-center">
+        {% if approved %}
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <p class="mt-4 text-sm font-medium text-foreground">{{ client.name }} is connected</p>
+            <p class="mt-1 text-sm text-muted-foreground">You may now return to your device. This window can be closed.</p>
+        {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-muted-foreground/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <p class="mt-4 text-sm font-medium text-foreground">Request denied</p>
+            <p class="mt-1 text-sm text-muted-foreground">{{ client.name }} was not granted access. You may close this window.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

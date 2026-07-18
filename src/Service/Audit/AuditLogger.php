@@ -79,6 +79,8 @@ use Symfony\Component\Uid\Uuid;
  *   oauth.client.deleted               — OAuth application removed
  *   oauth.authorization.granted        — user approved a client's consent request (context: scopes)
  *   oauth.authorization.denied         — user rejected a client's consent request
+ *   oauth.device_authorization.granted — user approved a device authorization request (context: scopes)
+ *   oauth.device_authorization.denied  — user rejected a device authorization request
  */
 class AuditLogger
 {

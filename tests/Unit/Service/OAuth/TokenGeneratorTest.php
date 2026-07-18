@@ -78,4 +78,30 @@ final class TokenGeneratorTest extends UnitTestCase
 
         $this->assertFalse($this->generator->verifySecret('wrong', $hash));
     }
+
+    #[Test]
+    public function generateUserCodeReturnsExpectedFormat(): void
+    {
+        $code = $this->generator->generateUserCode();
+
+        $this->assertMatchesRegularExpression('/^[BCDFGHJKLMNPQRSTVWXZ23456789]{4}-[BCDFGHJKLMNPQRSTVWXZ23456789]{4}$/', $code);
+    }
+
+    #[Test]
+    public function generateUserCodeExcludesAmbiguousCharacters(): void
+    {
+        for ($i = 0; $i < 50; ++$i) {
+            $code = $this->generator->generateUserCode();
+            $this->assertDoesNotMatchRegularExpression('/[01OI]/', $code);
+        }
+    }
+
+    #[Test]
+    public function generateUserCodeIsUnique(): void
+    {
+        $this->assertNotSame(
+            $this->generator->generateUserCode(),
+            $this->generator->generateUserCode(),
+        );
+    }
 }
