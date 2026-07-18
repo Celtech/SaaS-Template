@@ -1,0 +1,88 @@
+{% extends 'layouts/admin.html.twig' %}
+{% block title %}Webhook Deliveries{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-foreground">Webhook Deliveries</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ total }} deliver{{ total != 1 ? 'ies' : 'y' }} across all organizations.</p>
+    </div>
+
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="event" value="{{ event }}" placeholder="Filter by event prefix…"
+               class="flex-1 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <select name="status" class="w-48 rounded-md border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">All statuses</option>
+            {% for s in statuses %}
+                <option value="{{ s.value }}" {{ status is not null and status.value == s.value ? 'selected' : '' }}>{{ s.value }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Filter</button>
+        {% if event or status %}
+            <a href="{{ path('admin_webhooks_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="rounded-lg border bg-card overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Organization</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Endpoint</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Event</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Attempts</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Last response</th>
+                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Sent</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for entry in entries %}
+                <tr class="hover:bg-muted/30">
+                    <td class="px-4 py-2.5 text-xs text-foreground">{{ entry.endpoint.organization.name }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground max-w-xs truncate">{{ entry.endpoint.url }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ entry.eventType }}</td>
+                    <td class="px-4 py-2.5">
+                        {% set statusValue = entry.status.value %}
+                        <span class="inline-flex rounded-full px-2 py-0.5 text-xs
+                            {{ statusValue == 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                               statusValue == 'pending' ? 'bg-muted text-muted-foreground' :
+                               statusValue == 'failed' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                          'bg-destructive/10 text-destructive' }}">
+                            {{ statusValue }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ entry.attempts }}</td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ entry.lastResponseCode ?? '—' }}</td>
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{{ entry.createdAt|date('Y-m-d H:i:s') }} UTC</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No webhook deliveries found{% if event or status %} matching the current filter{% endif %}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if totalPages > 1 %}
+    <div class="flex items-center justify-between text-sm">
+        <p class="text-muted-foreground">
+            Showing {{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} of {{ total }}
+        </p>
+        <div class="flex gap-2">
+            {% if page > 1 %}
+                <a href="{{ path('admin_webhooks_index', {page: page - 1, event: event, status: status ? status.value : ''}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Previous</a>
+            {% endif %}
+            {% if page < totalPages %}
+                <a href="{{ path('admin_webhooks_index', {page: page + 1, event: event, status: status ? status.value : ''}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
