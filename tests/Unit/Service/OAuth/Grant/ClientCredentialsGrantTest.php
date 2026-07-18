@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Service\OAuth\Grant;
 use App\Entity\OAuthAccessToken;
 use App\Entity\OAuthClient;
 use App\Entity\OAuthRefreshToken;
+use App\Service\OAuth\ClientCredentialsExtractor;
 use App\Service\OAuth\ClientService;
 use App\Service\OAuth\Grant\ClientCredentialsGrant;
 use App\Service\OAuth\TokenService;
@@ -25,7 +26,7 @@ final class ClientCredentialsGrantTest extends UnitTestCase
     {
         $this->clientService = $this->createMock(ClientService::class);
         $this->tokenService = $this->createMock(TokenService::class);
-        $this->grant = new ClientCredentialsGrant($this->clientService, $this->tokenService);
+        $this->grant = new ClientCredentialsGrant($this->clientService, $this->tokenService, new ClientCredentialsExtractor());
     }
 
     #[Test]

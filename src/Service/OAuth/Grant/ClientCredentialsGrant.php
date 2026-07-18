@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\OAuth\Grant;
 
 use App\Security\OAuth\OAuthScope;
+use App\Service\OAuth\ClientCredentialsExtractor;
 use App\Service\OAuth\ClientService;
 use App\Service\OAuth\TokenService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,12 +17,13 @@ final class ClientCredentialsGrant
     public function __construct(
         private readonly ClientService $clientService,
         private readonly TokenService $tokenService,
+        private readonly ClientCredentialsExtractor $credentialsExtractor,
     ) {
     }
 
     public function handle(Request $request): JsonResponse
     {
-        [$clientId, $clientSecret] = $this->extractClientCredentials($request);
+        [$clientId, $clientSecret] = $this->credentialsExtractor->extract($request);
 
         if ($clientId === null || $clientSecret === null) {
             return $this->error('invalid_client', 'Client credentials are required.', Response::HTTP_UNAUTHORIZED);
@@ -55,36 +57,21 @@ final class ClientCredentialsGrant
             user: null,
             organization: $client->getOrganization(),
             scopes: $scopes,
+            includeRefreshToken: $client->supportsGrant('refresh_token'),
         );
 
-        return new JsonResponse([
+        $response = [
             'access_token' => $plainAccess,
             'token_type' => 'Bearer',
             'expires_in' => TokenService::accessTokenTtl(),
-            'refresh_token' => $plainRefresh,
             'scope' => implode(' ', $scopes),
-        ]);
-    }
+        ];
 
-    /** @return array{string|null, string|null} */
-    private function extractClientCredentials(Request $request): array
-    {
-        // Prefer HTTP Basic (RFC 6749 §2.3.1).
-        $authHeader = $request->headers->get('Authorization', '');
-        if (str_starts_with($authHeader, 'Basic ')) {
-            $decoded = base64_decode(substr($authHeader, 6), strict: true);
-            if ($decoded !== false && str_contains($decoded, ':')) {
-                [$id, $secret] = explode(':', $decoded, 2);
-
-                return [$id ?: null, $secret ?: null];
-            }
+        if ($plainRefresh !== null) {
+            $response['refresh_token'] = $plainRefresh;
         }
 
-        // Fall back to POST body parameters.
-        $id = $request->request->getString('client_id') ?: null;
-        $secret = $request->request->getString('client_secret') ?: null;
-
-        return [$id, $secret];
+        return new JsonResponse($response);
     }
 
     /** @return string[] */

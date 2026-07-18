@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\OAuth;
 
 use App\Security\OAuth\OAuthScope;
+use App\Service\OAuth\ClientCredentialsExtractor;
+use App\Service\OAuth\ClientService;
 use App\Service\OAuth\Grant\ClientCredentialsGrant;
 use App\Service\OAuth\TokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +22,8 @@ final class OAuthController extends AbstractController
     public function __construct(
         private readonly ClientCredentialsGrant $clientCredentialsGrant,
         private readonly TokenService $tokenService,
+        private readonly ClientService $clientService,
+        private readonly ClientCredentialsExtractor $credentialsExtractor,
         private readonly UrlGeneratorInterface $router,
     ) {
     }
@@ -31,7 +35,9 @@ final class OAuthController extends AbstractController
     #[Route('/.well-known/oauth-authorization-server', name: 'oauth_discovery', methods: ['GET'])]
     public function discovery(): JsonResponse
     {
-        $base = rtrim($this->router->generate('oauth_discovery', [], UrlGeneratorInterface::ABSOLUTE_URL), '/.well-known/oauth-authorization-server');
+        $suffix = '/.well-known/oauth-authorization-server';
+        $full = $this->router->generate('oauth_discovery', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $base = str_ends_with($full, $suffix) ? substr($full, 0, -\strlen($suffix)) : $full;
 
         return new JsonResponse([
             'issuer' => $base,
@@ -136,7 +142,33 @@ final class OAuthController extends AbstractController
             );
         }
 
-        $result = $this->tokenService->rotateRefreshToken($plainRefresh);
+        // RFC 6749 §6 — the client must (re-)authenticate on every token-endpoint request.
+        [$clientId, $clientSecret] = $this->credentialsExtractor->extract($request);
+
+        if ($clientId === null || $clientSecret === null) {
+            return new JsonResponse(
+                ['error' => 'invalid_client', 'error_description' => 'Client credentials are required.'],
+                Response::HTTP_UNAUTHORIZED,
+            );
+        }
+
+        $client = $this->clientService->validateClientCredentials($clientId, $clientSecret);
+
+        if ($client === null) {
+            return new JsonResponse(
+                ['error' => 'invalid_client', 'error_description' => 'Invalid client credentials.'],
+                Response::HTTP_UNAUTHORIZED,
+            );
+        }
+
+        if (!$client->supportsGrant('refresh_token')) {
+            return new JsonResponse(
+                ['error' => 'unauthorized_client', 'error_description' => 'This client is not authorized for the refresh_token grant.'],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        $result = $this->tokenService->rotateRefreshToken($plainRefresh, $client);
 
         if ($result === null) {
             return new JsonResponse(

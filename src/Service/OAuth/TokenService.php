@@ -31,11 +31,11 @@ class TokenService
     }
 
     /**
-     * Issues a new access token and an accompanying refresh token.
+     * Issues a new access token and, unless suppressed, an accompanying refresh token.
      *
      * @param  string[]  $scopes
      *
-     * @return array{OAuthAccessToken, OAuthRefreshToken, string, string}
+     * @return array{OAuthAccessToken, OAuthRefreshToken|null, string, string|null}
      *         [accessToken, refreshToken, plainAccessToken, plainRefreshToken]
      */
     public function issueTokenPair(
@@ -43,10 +43,9 @@ class TokenService
         ?User $user,
         ?Organization $organization,
         array $scopes,
+        bool $includeRefreshToken = true,
     ): array {
         $plainAccess = $this->generator->generateToken();
-        $plainRefresh = $this->generator->generateToken();
-
         $now = new DateTimeImmutable();
 
         $accessToken = new OAuthAccessToken(
@@ -58,6 +57,15 @@ class TokenService
             expiresAt: $now->modify('+' . self::ACCESS_TOKEN_TTL . ' seconds'),
         );
 
+        $this->accessTokens->save($accessToken, flush: !$includeRefreshToken);
+        $this->cacheAccessToken($plainAccess, $accessToken);
+
+        if (!$includeRefreshToken) {
+            return [$accessToken, null, $plainAccess, null];
+        }
+
+        $plainRefresh = $this->generator->generateToken();
+
         $refreshToken = new OAuthRefreshToken(
             tokenHash: $this->generator->hashToken($plainRefresh),
             client: $client,
@@ -67,10 +75,7 @@ class TokenService
             expiresAt: $now->modify('+' . self::REFRESH_TOKEN_TTL . ' seconds'),
         );
 
-        $this->accessTokens->save($accessToken);
         $this->refreshTokens->save($refreshToken, flush: true);
-
-        $this->cacheAccessToken($plainAccess, $accessToken);
 
         return [$accessToken, $refreshToken, $plainAccess, $plainRefresh];
     }
@@ -110,9 +115,12 @@ class TokenService
     /**
      * Validates and rotates a refresh token: revokes the old one, issues a new pair.
      *
+     * The requesting client must be the same client the refresh token was issued to
+     * (RFC 6749 §6) — callers must authenticate the client before calling this.
+     *
      * @return array{OAuthAccessToken, OAuthRefreshToken, string, string}|null
      */
-    public function rotateRefreshToken(string $plainRefreshToken): ?array
+    public function rotateRefreshToken(string $plainRefreshToken, OAuthClient $requestingClient): ?array
     {
         $hash = $this->generator->hashToken($plainRefreshToken);
         $refreshToken = $this->refreshTokens->findByTokenHash($hash);
@@ -121,15 +129,23 @@ class TokenService
             return null;
         }
 
+        if (!$refreshToken->getClient()->getId()->equals($requestingClient->getId())) {
+            return null;
+        }
+
         $refreshToken->revoke();
         $this->refreshTokens->save($refreshToken, flush: true);
 
-        return $this->issueTokenPair(
+        [$newAccessToken, $newRefreshToken, $plainAccess, $plainRefresh] = $this->issueTokenPair(
             $refreshToken->getClient(),
             $refreshToken->getUser(),
             $refreshToken->getOrganization(),
             $refreshToken->getScopes(),
         );
+
+        \assert($newRefreshToken !== null && $plainRefresh !== null);
+
+        return [$newAccessToken, $newRefreshToken, $plainAccess, $plainRefresh];
     }
 
     public function revokeAccessToken(string $plainToken): void
