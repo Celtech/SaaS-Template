@@ -10,6 +10,7 @@
         "doctrine/doctrine-bundle": "*",
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
+        "dragonmantank/cron-expression": "^3.6",
         "endroid/qr-code": "^6.1",
         "scheb/2fa-backup-code": "^8.5",
         "scheb/2fa-bundle": "^8.5",
