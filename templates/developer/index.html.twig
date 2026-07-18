@@ -21,15 +21,16 @@
             <p class="text-sm text-muted-foreground">Register and manage OAuth 2.0 clients to authenticate your integrations.</p>
         </a>
 
-        <div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-6 opacity-50">
+        <a href="{{ path('developer_webhooks_index') }}"
+           class="group flex flex-col gap-3 rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/50">
             <div class="flex items-center gap-3">
                 <div class="rounded-md bg-muted p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </div>
-                <h2 class="text-base font-medium text-foreground">Webhooks <span class="ml-1 text-xs text-muted-foreground">(coming soon)</span></h2>
+                <h2 class="text-base font-medium text-foreground group-hover:text-primary">Webhooks</h2>
             </div>
             <p class="text-sm text-muted-foreground">Send real-time event notifications to your endpoints via HMAC-signed webhooks.</p>
-        </div>
+        </a>
     </div>
 
     <div class="rounded-lg border border-border bg-card p-6 space-y-4">
