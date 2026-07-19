@@ -387,27 +387,26 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: documented, versioned, authenticated REST API with idempotency support.
 
-> **Superseded by OAuth 2.0.** This phase originally planned a simple `ApiKey`/SHA-256 model. That was replaced with the full OAuth 2.0 infrastructure below (Client Credentials, Authorization Code + PKCE, Device Authorization) as the actual API auth mechanism — it covers everything the `ApiKey` plan did plus delegated/scoped access. The checked items below are delivered via OAuth; the unchecked items (actual `/api/v1/*` resource endpoints, rate limiting, idempotency middleware, OpenAPI docs) are still outstanding regardless of auth mechanism.
+> **Superseded by OAuth 2.0.** This phase originally planned a simple `ApiKey`/SHA-256 model. That was replaced with the full OAuth 2.0 infrastructure below (Client Credentials, Authorization Code + PKCE, Device Authorization) as the actual API auth mechanism — it covers everything the `ApiKey` plan did plus delegated/scoped access. OpenAPI docs were dropped from scope entirely (operator decision); rate limiting and the idempotency middleware are still outstanding.
 
 - [x] Client credential storage (UUID v7, name, client_secret hash SHA-256, organization, scopes[], created_by_id, revoked_at) — `OAuthClient` entity
 - [x] Credential generation: `client_id`/`client_secret` random bytes; hash stored; full secret shown **once** on creation
-- [x] `OAuthTokenAuthenticator` Symfony Security authenticator (Bearer token) — not yet exercised against a real protected resource; see "Functional tests" below
+- [x] `OAuthTokenAuthenticator` Symfony Security authenticator (Bearer token) — now exercised against real `/api/v1/*` endpoints; see "Functional tests" below
 - [x] Tokens and codes never logged: `SensitiveDataProcessor` covers `token`, `client_secret`, `authorization`, `device_code`, `user_code`, `code_verifier`
 - [ ] Rate limiting via Symfony RateLimiter (per client and per org, configurable limits)
-- [ ] `/api/v1/` route prefix, versioned from day one
-- [ ] `ApiController` base: standard JSON envelope, RFC 7807 Problem Details for errors
+- [x] `/api/v1/` route prefix, versioned from day one
+- [x] `ApiController` base: standard `{"data": ...}` JSON envelope; `ApiExceptionListener` renders every exception on `/api/*` as RFC 7807 Problem Details
 - [ ] **Idempotency-Key middleware**: Symfony event listener on all mutating requests (`POST`, `PATCH`, `DELETE`)
   - Client sends `Idempotency-Key: <uuid4>` header
   - Cache key: `idempotency:{org_id}:{idempotency_key}` in Valkey, TTL 24 hours
   - On hit: return cached response immediately (status code + body), skip handler entirely
   - On miss: execute handler, serialize response to Valkey, return normally
   - Conflicting in-flight requests (same key, concurrent): 409 Conflict
-  - Documented in OpenAPI spec with clear retry semantics
 - [x] OAuth client management UI (create, name + set scopes + grants, view client_id, regenerate secret, revoke)
 - [x] `AuditLogger` events: client created/updated/deleted/secret regenerated, token issued/revoked, authorization/device-code granted/denied
-- [ ] Starter endpoints: `GET /api/v1/me`, `GET /api/v1/organizations` — no `/api/*` resource routes exist yet, so `OAuthTokenAuthenticator` has no real endpoint to protect
-- [ ] OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)
-- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`
+- [x] Starter endpoints: `GET /api/v1/me` (works for both delegated and Client Credentials tokens, scope-gated fields), `GET /api/v1/organizations` (requires `org:read`)
+- [ ] ~~OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)~~ — explicitly out of scope for this template by operator decision
+- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect, `/api/v1/me` and `/api/v1/organizations` (401/403/200 paths) — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`, `MeControllerTest`, `OrganizationsControllerTest`
 - [ ] Rate limit (429) and idempotency tests — not applicable until those controls exist
 
 **Branch:** `feat/oauth-developer-area`
