@@ -11,6 +11,7 @@ use App\Entity\Organization;
 use App\Entity\User;
 use App\Repository\OAuthAccessTokenRepository;
 use App\Repository\OAuthRefreshTokenRepository;
+use App\Service\Audit\AuditLogger;
 use DateTimeImmutable;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -25,6 +26,7 @@ class TokenService
         private readonly OAuthAccessTokenRepository $accessTokens,
         private readonly OAuthRefreshTokenRepository $refreshTokens,
         private readonly TokenGenerator $generator,
+        private readonly AuditLogger $auditLogger,
         #[Autowire(service: 'cache.oauth_tokens')]
         private readonly CacheItemPoolInterface $cache,
     ) {
@@ -61,6 +63,8 @@ class TokenService
         $this->cacheAccessToken($plainAccess, $accessToken);
 
         if (!$includeRefreshToken) {
+            $this->logIssued($client, $user, $scopes);
+
             return [$accessToken, null, $plainAccess, null];
         }
 
@@ -76,6 +80,7 @@ class TokenService
         );
 
         $this->refreshTokens->save($refreshToken, flush: true);
+        $this->logIssued($client, $user, $scopes);
 
         return [$accessToken, $refreshToken, $plainAccess, $plainRefresh];
     }
@@ -135,6 +140,7 @@ class TokenService
 
         $refreshToken->revoke();
         $this->refreshTokens->save($refreshToken, flush: true);
+        $this->logRevoked($refreshToken->getClient(), $refreshToken->getUser(), 'refresh_token');
 
         [$newAccessToken, $newRefreshToken, $plainAccess, $plainRefresh] = $this->issueTokenPair(
             $refreshToken->getClient(),
@@ -156,6 +162,7 @@ class TokenService
         if ($token !== null && !$token->isRevoked()) {
             $token->revoke();
             $this->accessTokens->save($token, flush: true);
+            $this->logRevoked($token->getClient(), $token->getUser(), 'access_token');
         }
 
         $this->markCacheRevoked($hash);
@@ -169,6 +176,7 @@ class TokenService
         if ($token !== null && !$token->isRevoked()) {
             $token->revoke();
             $this->refreshTokens->save($token, flush: true);
+            $this->logRevoked($token->getClient(), $token->getUser(), 'refresh_token');
         }
     }
 
@@ -198,5 +206,30 @@ class TokenService
         $item->set(['revoked' => true]);
         $item->expiresAfter(300); // short TTL — no point keeping revoked markers long
         $this->cache->save($item);
+    }
+
+    /** @param string[] $scopes */
+    private function logIssued(OAuthClient $client, ?User $user, array $scopes): void
+    {
+        $this->auditLogger->logOAuthEvent(
+            'token.issued',
+            $client->getId()->toRfc4122(),
+            'oauth_client',
+            newValue: ['scopes' => $scopes],
+            actorId: $user?->getId()->toRfc4122() ?? $client->getId()->toRfc4122(),
+            actorType: $user !== null ? 'user' : 'oauth_client',
+        );
+    }
+
+    private function logRevoked(OAuthClient $client, ?User $user, string $tokenType): void
+    {
+        $this->auditLogger->logOAuthEvent(
+            'token.revoked',
+            $client->getId()->toRfc4122(),
+            'oauth_client',
+            newValue: ['token_type' => $tokenType],
+            actorId: $user?->getId()->toRfc4122() ?? $client->getId()->toRfc4122(),
+            actorType: $user !== null ? 'user' : 'oauth_client',
+        );
     }
 }

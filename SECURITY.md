@@ -82,8 +82,8 @@ For context when evaluating a potential issue:
 - **Session security:** `Secure`, `HttpOnly`, `SameSite=Strict` cookies; session ID regenerated on login
 - **Account lockout:** configurable max failed attempts before temporary lockout
 - **Audit logging:** immutable append-only log covering all auth events and admin mutations
-- **API:** opaque API keys stored as SHA-256 hash only; rate-limited per key and per org
-- **Webhooks:** all outbound payloads signed with HMAC-SHA256; Stripe inbound webhooks signature-verified before processing
+- **API:** OAuth 2.0 (Client Credentials, Authorization Code + PKCE, Device Authorization); client secrets and tokens stored as SHA-256 hash only; scoped access via `OAuthScope`
+- **Webhooks:** all outbound payloads signed with HMAC-SHA256; signing secret encrypted at rest (libsodium), not one-way hashed, since it must be recovered to sign each delivery; Stripe inbound webhooks signature-verified before processing
 - **Payment data:** Stripe Checkout/Customer Portal only: no raw card data ever reaches this application (PCI SAQ-A scope)
 - **Sensitive data:** Monolog processor scrubs passwords, tokens, secrets, and auth headers from all log output
 - **Transport:** TLS enforced via Caddy (FrankenPHP); HSTS, CSP, and other security headers on all responses

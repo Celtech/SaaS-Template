@@ -387,11 +387,13 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: documented, versioned, authenticated REST API with idempotency support.
 
-- [ ] `ApiKey` entity (UUID v7, name, key_hash SHA-256, key_prefix, organization, scopes[], last_used_at, expires_at, created_by_id, revoked_at)
-- [ ] Key generation: prefix `sk_live_` + 32 random bytes; hash stored; full key shown **once** on creation
-- [ ] `ApiKeyAuthenticator` Symfony Security authenticator (Bearer token or `X-API-Key` header)
-- [ ] API key never logged: `SensitiveDataProcessor` covers `Authorization` and `X-API-Key` headers
-- [ ] Rate limiting via Symfony RateLimiter (per key and per org, configurable limits)
+> **Superseded by OAuth 2.0.** This phase originally planned a simple `ApiKey`/SHA-256 model. That was replaced with the full OAuth 2.0 infrastructure below (Client Credentials, Authorization Code + PKCE, Device Authorization) as the actual API auth mechanism — it covers everything the `ApiKey` plan did plus delegated/scoped access. The checked items below are delivered via OAuth; the unchecked items (actual `/api/v1/*` resource endpoints, rate limiting, idempotency middleware, OpenAPI docs) are still outstanding regardless of auth mechanism.
+
+- [x] Client credential storage (UUID v7, name, client_secret hash SHA-256, organization, scopes[], created_by_id, revoked_at) — `OAuthClient` entity
+- [x] Credential generation: `client_id`/`client_secret` random bytes; hash stored; full secret shown **once** on creation
+- [x] `OAuthTokenAuthenticator` Symfony Security authenticator (Bearer token) — not yet exercised against a real protected resource; see "Functional tests" below
+- [x] Tokens and codes never logged: `SensitiveDataProcessor` covers `token`, `client_secret`, `authorization`, `device_code`, `user_code`, `code_verifier`
+- [ ] Rate limiting via Symfony RateLimiter (per client and per org, configurable limits)
 - [ ] `/api/v1/` route prefix, versioned from day one
 - [ ] `ApiController` base: standard JSON envelope, RFC 7807 Problem Details for errors
 - [ ] **Idempotency-Key middleware**: Symfony event listener on all mutating requests (`POST`, `PATCH`, `DELETE`)
@@ -401,13 +403,14 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
   - On miss: execute handler, serialize response to Valkey, return normally
   - Conflicting in-flight requests (same key, concurrent): 409 Conflict
   - Documented in OpenAPI spec with clear retry semantics
-- [ ] API key management UI (create, name + set scopes, view prefix/last4, revoke)
-- [ ] `AuditLogger` events: api_key_created, api_key_revoked
-- [ ] Starter endpoints: `GET /api/v1/me`, `GET /api/v1/organizations`
+- [x] OAuth client management UI (create, name + set scopes + grants, view client_id, regenerate secret, revoke)
+- [x] `AuditLogger` events: client created/updated/deleted/secret regenerated, token issued/revoked, authorization/device-code granted/denied
+- [ ] Starter endpoints: `GET /api/v1/me`, `GET /api/v1/organizations` — no `/api/*` resource routes exist yet, so `OAuthTokenAuthenticator` has no real endpoint to protect
 - [ ] OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)
-- [ ] Functional tests: auth, invalid key, expired key, rate limit (429), scope enforcement (403), idempotency (duplicate request returns cached response, no duplicate resource created)
+- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`
+- [ ] Rate limit (429) and idempotency tests — not applicable until those controls exist
 
-**Branch:** `feat/phase-8-api`
+**Branch:** `feat/oauth-developer-area`
 
 ---
 
@@ -415,18 +418,18 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: customers register endpoints; events delivered reliably with HMAC signing and retries.
 
-- [ ] `WebhookEndpoint` entity (UUID v7, url, secret_hash, display_hint, events[], organization, is_active, created_at)
-- [ ] `WebhookDelivery` entity (UUID v7, endpoint, event_type, payload JSON, status, attempts, next_attempt_at, last_response_code, last_response_body, created_at)
-- [ ] Secret: shown once on creation, stored as HMAC key (hashed for storage, used for signing)
-- [ ] Signature: `X-Webhook-Signature: sha256=<HMAC-SHA256(secret, body)>`: documented for customers
-- [ ] `WebhookEvent` PHP enum (code-defined catalog of all event types)
-- [ ] `WebhookDispatcher` service: takes event type + payload, fans out to all matching endpoints via Messenger
-- [ ] `WebhookDeliveryHandler` Messenger handler: sends HTTP POST, logs response, schedules retry on failure
-- [ ] Retry backoff: 1min, 5min, 30min, 2hr, 12hr (max 5 attempts, configurable)
-- [ ] Endpoint management UI: create, edit, test (sends sample payload), delivery log per endpoint
-- [ ] Admin: webhook delivery log across all orgs
-- [ ] Unit tests: HMAC signing, retry backoff schedule, event fan-out
-- [ ] Integration tests: delivery handler (mock HTTP client), failure + retry scheduling
+- [x] `WebhookEndpoint` entity (UUID v7, url, secret, display_hint, events[], organization, is_active, created_at)
+- [x] `WebhookDelivery` entity (UUID v7, endpoint, event_type, payload JSON, status, attempts, next_attempt_at, last_response_code, last_response_body, created_at)
+- [x] Secret: shown once on creation; encrypted at rest (libsodium `sodium_crypto_secretbox`), not hashed — the server must recover the plaintext to compute the HMAC on each delivery
+- [x] Signature: `X-Webhook-Signature: sha256=<HMAC-SHA256(secret, body)>`: documented for customers (`docs/WEBHOOKS.md`)
+- [x] `WebhookEvent` PHP enum (code-defined catalog of all event types)
+- [x] `WebhookDispatcher` service: takes event type + payload, fans out to all matching endpoints via Messenger
+- [x] `DeliverWebhookMessageHandler` Messenger handler: sends HTTP POST, logs response, schedules retry on failure
+- [x] Retry backoff: 1min, 5min, 30min, 2hr, 12hr (max 5 attempts, configurable)
+- [x] Endpoint management UI: create, edit, test (sends sample payload), delivery log per endpoint
+- [x] Admin: webhook delivery log across all orgs
+- [x] Unit tests: HMAC signing, retry backoff schedule, event fan-out
+- [x] Integration tests: delivery handler (mock HTTP client), failure + retry scheduling
 
 **Branch:** `feat/phase-9-webhooks`
 

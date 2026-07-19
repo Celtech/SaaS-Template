@@ -26,7 +26,7 @@ This template is designed to satisfy the technical control requirements within t
 | Multi-factor authentication | 2FA/TOTP enforced for all admin accounts (`scheb/2fa-bundle`); optional for end users |
 | Account lockout | Configurable max failed login attempts (default: 5) and lockout duration (default: 30 min) |
 | Session management | Session ID regenerated on login (prevents session fixation); configurable idle timeout (15 min for admin, 2 hr for users); `Secure`, `HttpOnly`, `SameSite=Strict` cookies |
-| Audit logging | Immutable, append-only `AuditLog` covering: all authentication events (success, failure, logout), all admin mutations (with before/after values), all impersonation sessions and actions taken during them, all permission and role changes, all billing and subscription events |
+| Audit logging | Immutable, append-only `AuditLog` covering: all authentication events (success, failure, logout), all admin mutations (with before/after values), all impersonation sessions and actions taken during them, all permission and role changes, all billing and subscription events, OAuth client/token lifecycle (client created/deleted, token issued/revoked, authorization and device-code grant/deny) and outgoing webhook endpoint mutations |
 | Privileged access monitoring | All admin actions are logged with actor identity, IP, and user agent; impersonation sessions are separately tracked with hard 60-minute expiry |
 | Separation of duties | Super Admin role required for system configuration and admin account management; support-level admins have read-only access |
 | Transmission encryption | TLS enforced by Caddy; HSTS header ensures browsers never connect over HTTP; HTTP/3 supported |
@@ -39,8 +39,8 @@ This template is designed to satisfy the technical control requirements within t
 | Control | Implementation |
 |---|---|
 | Password storage | Argon2id hashing (Symfony default; compliant with NIST SP 800-63B) |
-| API key storage | SHA-256 hash stored; plaintext shown once on generation and never persisted |
-| Webhook secret storage | Hashed; shown once on creation |
+| OAuth client & token storage | Client secrets and access/refresh tokens stored as SHA-256 hash; plaintext shown once on generation and never persisted |
+| Webhook secret storage | Encrypted at rest (libsodium `sodium_crypto_secretbox`), not one-way hashed — the server must recover the plaintext secret to recompute the HMAC-SHA256 signature on every delivery attempt; shown once on creation |
 | Sensitive data scrubbing | Monolog `SensitiveDataProcessor` removes passwords, tokens, secrets, and `Authorization` headers from all log output before writing |
 | Payment data | Stripe Checkout and Customer Portal handle all card data; no card numbers, CVVs, or full PANs ever reach the application (see PCI section) |
 | Impersonation data isolation | Payment fields display as masked during admin impersonation sessions |

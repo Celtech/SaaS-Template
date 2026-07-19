@@ -40,6 +40,9 @@ final class SensitiveDataProcessor
         'expiry',
         'exp_month',
         'exp_year',
+        'device_code',
+        'user_code',
+        'code_verifier',
     ];
 
     public function __invoke(LogRecord $record): LogRecord
