@@ -1,0 +1,10 @@
+framework:
+    rate_limiter:
+        api_client:
+            policy: 'sliding_window'
+            limit: '%env(int:API_RATE_LIMIT_CLIENT_PER_MINUTE)%'
+            interval: '1 minute'
+        api_org:
+            policy: 'sliding_window'
+            limit: '%env(int:API_RATE_LIMIT_ORG_PER_MINUTE)%'
+            interval: '1 minute'

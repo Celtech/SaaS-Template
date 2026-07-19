@@ -38,6 +38,8 @@ final class ApiExceptionListener
 
         $exception = $event->getThrowable();
         [$status, $title, $detail] = $this->describe($exception);
+        $headers = $exception instanceof HttpExceptionInterface ? $exception->getHeaders() : [];
+        $headers['Content-Type'] = 'application/problem+json';
 
         $event->setResponse(new JsonResponse(
             [
@@ -47,7 +49,7 @@ final class ApiExceptionListener
                 'detail' => $detail,
             ],
             $status,
-            ['Content-Type' => 'application/problem+json'],
+            $headers,
         ));
 
         $event->stopPropagation();
