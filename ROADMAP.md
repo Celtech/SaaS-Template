@@ -387,7 +387,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 
 > Goal: documented, versioned, authenticated REST API with idempotency support.
 
-> **Superseded by OAuth 2.0.** This phase originally planned a simple `ApiKey`/SHA-256 model. That was replaced with the full OAuth 2.0 infrastructure below (Client Credentials, Authorization Code + PKCE, Device Authorization) as the actual API auth mechanism — it covers everything the `ApiKey` plan did plus delegated/scoped access. OpenAPI docs were dropped from scope entirely (operator decision); rate limiting and the idempotency middleware are still outstanding.
+> **Superseded by OAuth 2.0.** This phase originally planned a simple `ApiKey`/SHA-256 model. That was replaced with the full OAuth 2.0 infrastructure below (Client Credentials, Authorization Code + PKCE, Device Authorization) as the actual API auth mechanism — it covers everything the `ApiKey` plan did plus delegated/scoped access. Phase 8 is complete except OpenAPI docs, which were dropped from scope entirely (operator decision).
 
 - [x] Client credential storage (UUID v7, name, client_secret hash SHA-256, organization, scopes[], created_by_id, revoked_at) — `OAuthClient` entity
 - [x] Credential generation: `client_id`/`client_secret` random bytes; hash stored; full secret shown **once** on creation
@@ -396,18 +396,17 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [x] Rate limiting via Symfony RateLimiter (per client and per org, configurable via `API_RATE_LIMIT_CLIENT_PER_MINUTE`/`API_RATE_LIMIT_ORG_PER_MINUTE`)
 - [x] `/api/v1/` route prefix, versioned from day one
 - [x] `ApiController` base: standard `{"data": ...}` JSON envelope; `ApiExceptionListener` renders every exception on `/api/*` as RFC 7807 Problem Details
-- [ ] **Idempotency-Key middleware**: Symfony event listener on all mutating requests (`POST`, `PATCH`, `DELETE`)
-  - Client sends `Idempotency-Key: <uuid4>` header
-  - Cache key: `idempotency:{org_id}:{idempotency_key}` in Valkey, TTL 24 hours
-  - On hit: return cached response immediately (status code + body), skip handler entirely
-  - On miss: execute handler, serialize response to Valkey, return normally
-  - Conflicting in-flight requests (same key, concurrent): 409 Conflict
+- [x] **Idempotency-Key middleware**: `IdempotencyKeyListener` on all mutating `/api/*` requests (`POST`, `PATCH`, `DELETE`)
+  - Client sends `Idempotency-Key: <uuid4>` header (opt-in per request, like Stripe/PayPal)
+  - Cache key: sha256 of `{org_id}:{idempotency_key}` (PSR-6 forbids raw `:`), TTL 24 hours, `cache.idempotency` pool
+  - On hit: return cached response immediately (status + headers + body, `Idempotent-Replayed: true`), skip handler entirely
+  - On miss: acquire a non-blocking Symfony Lock, execute handler, cache the response (unless 5xx), release lock
+  - Conflicting in-flight requests (same key, concurrent): 409 Conflict (lock acquisition fails)
 - [x] OAuth client management UI (create, name + set scopes + grants, view client_id, regenerate secret, revoke)
 - [x] `AuditLogger` events: client created/updated/deleted/secret regenerated, token issued/revoked, authorization/device-code granted/denied
 - [x] Starter endpoints: `GET /api/v1/me` (works for both delegated and Client Credentials tokens, scope-gated fields), `GET /api/v1/organizations` (requires `org:read`)
 - [ ] ~~OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)~~ — explicitly out of scope for this template by operator decision
-- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect, `/api/v1/me` and `/api/v1/organizations` (401/403/200 paths), rate limit 429s (per-client and per-org) — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`, `MeControllerTest`, `OrganizationsControllerTest`, `ApiRateLimitListenerTest`
-- [ ] Idempotency tests — not applicable until the idempotency middleware exists
+- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect, `/api/v1/me` and `/api/v1/organizations` (401/403/200 paths), rate limit 429s (per-client and per-org), idempotency replay/scoping/409-conflict — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`, `MeControllerTest`, `OrganizationsControllerTest`, `ApiRateLimitListenerTest`, `IdempotencyKeyListenerTest`
 
 **Branch:** `feat/oauth-developer-area`
 

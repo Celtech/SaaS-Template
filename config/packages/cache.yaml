@@ -41,6 +41,13 @@ framework:
                 adapter: cache.adapter.redis
                 provider: '%env(REDIS_DSN)%'
 
+            # Stores completed responses for Idempotency-Key replay on /api/* mutating
+            # requests (see IdempotencyKeyListener). TTL is set per-item (24h) by the
+            # listener itself, not here.
+            cache.idempotency:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_DSN)%'
+
 when@test:
     framework:
         cache:
@@ -54,10 +61,14 @@ when@test:
                 cache.oauth_tokens:
                     adapter: cache.adapter.array
                     provider: ~
-                # Not cache.adapter.array here: ArrayAdapter implements ResettableInterface
-                # and gets wiped by Symfony's services_resetter after every single request
-                # in a functional test — which would silently defeat rate limiting, since
-                # every request would see a freshly reset counter. Filesystem isn't reset.
+                # Not cache.adapter.array for these two: ArrayAdapter implements
+                # ResettableInterface and gets wiped by Symfony's services_resetter
+                # after every single request in a functional test — which would
+                # silently defeat both rate limiting and idempotency replay, since
+                # every request would see freshly reset state. Filesystem isn't reset.
                 cache.rate_limiter:
+                    adapter: cache.adapter.filesystem
+                    provider: ~
+                cache.idempotency:
                     adapter: cache.adapter.filesystem
                     provider: ~
