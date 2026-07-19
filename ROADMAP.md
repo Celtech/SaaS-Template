@@ -450,10 +450,10 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [x] Channel registration via Symfony DI tag (`app.notification_channel`, via `_instanceof` on `NotificationChannelInterface`): adding Slack/Discord requires implementing the interface and tagging the service
 
 **UI**
-- [ ] Notification bell icon in `Topbar` with unread count badge (polled via Turbo Stream every 30s)
-- [ ] Notification dropdown: latest 10, "Mark all read", link to full feed
-- [ ] Full notification feed page: paginated, filter by type, mark individual/all as read
-- [ ] **Notification preferences page** (in user profile settings): per-type toggles per channel (e.g., "Billing alerts" via In-App: on, Email: on, Slack: off)
+- [x] Notification bell icon in `Topbar` with unread count badge (polled every 30s — a Stimulus controller reloads the turbo-frame; not Mercure, since that's not set up in this template)
+- [x] Notification dropdown: latest 10, "Mark all read", link to full feed
+- [x] Full notification feed page: paginated, filter by type, mark individual/all as read
+- [x] **Notification preferences page** (in user profile settings): per-type toggles per channel; a type only shows the channels it supports (e.g. org events are in-app only)
 
 **Built-in Notification Types**
 - [ ] `billing.payment_failed`: email + in-app when invoice fails
@@ -467,8 +467,8 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 **Tests**
 - [x] Unit: `NotificationDispatcher` channel resolution, preference checking, each channel driver
 - [x] Integration: full dispatch pipeline (in-app persisted, email queued)
-- [ ] Functional: unread count in UI, mark as read, preferences save/load
-- [ ] Browser smoke test: trigger notification, see bell badge update, mark read
+- [x] Functional: unread count in UI, mark as read (own/other user, dropdown/feed redirect targets), mark all read, type filter + pagination, preferences save/load (defaults, explicit overrides, opt-in) — via `NotificationControllerTest`, `NotificationPreferenceControllerTest`
+- [x] Browser smoke test: bell badge shows unread count, dropdown lists notifications, mark read updates badge and feed, preferences save and persist across reload — verified manually via Chrome DevTools MCP
 
 **Branch:** `feat/phase-10-notifications`
 

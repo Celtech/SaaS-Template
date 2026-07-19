@@ -1,0 +1,71 @@
+{% extends 'layouts/app.html.twig' %}
+{% block title %}Notifications{% endblock %}
+
+{% block main %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-foreground">Notifications</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ total }} notification{{ total != 1 ? 's' : '' }}</p>
+        </div>
+        <form method="POST" action="{{ path('notifications_mark_all_read') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('notifications_mark_all_read') }}">
+            <button type="submit" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">
+                Mark all read
+            </button>
+        </form>
+    </div>
+
+    <form method="GET" class="flex gap-2">
+        <select name="type" class="w-64 rounded-md border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" onchange="this.form.submit()">
+            <option value="">All types</option>
+            {% for t in types %}
+                <option value="{{ t.value }}" {{ type == t.value ? 'selected' : '' }}>{{ t.description }}</option>
+            {% endfor %}
+        </select>
+        {% if type %}
+            <a href="{{ path('notifications_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="rounded-lg border bg-card overflow-hidden">
+        {% for notification in notifications %}
+            <div class="flex items-start gap-4 border-b px-4 py-4 last:border-b-0 {{ notification.read ? '' : 'bg-accent/30' }}">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-foreground">{{ notification.title }}</p>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ notification.body }}</p>
+                    <p class="mt-1.5 text-xs text-muted-foreground">{{ notification.createdAt|date('Y-m-d H:i:s') }} UTC</p>
+                </div>
+                {% if not notification.read %}
+                    <form method="POST" action="{{ path('notifications_mark_read', {id: notification.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('notifications_mark_read_' ~ notification.id) }}">
+                        <button type="submit" class="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20">
+                            Mark read
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="px-4 py-8 text-center text-sm text-muted-foreground">No notifications{% if type %} matching the current filter{% endif %}.</p>
+        {% endfor %}
+    </div>
+
+    {% if totalPages > 1 %}
+    <div class="flex items-center justify-between text-sm">
+        <p class="text-muted-foreground">
+            Showing {{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} of {{ total }}
+        </p>
+        <div class="flex gap-2">
+            {% if page > 1 %}
+                <a href="{{ path('notifications_index', {page: page - 1, type: type}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Previous</a>
+            {% endif %}
+            {% if page < totalPages %}
+                <a href="{{ path('notifications_index', {page: page + 1, type: type}) }}"
+                   class="rounded-md border px-3 py-1.5 text-muted-foreground hover:bg-accent/50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

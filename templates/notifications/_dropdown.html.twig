@@ -1,0 +1,37 @@
+<turbo-frame id="notification-dropdown">
+    <div class="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <p class="text-sm font-medium text-popover-foreground">Notifications</p>
+        {% if notifications|length > 0 %}
+            <form method="POST" action="{{ path('notifications_mark_all_read') }}" data-turbo-frame="notification-dropdown">
+                <input type="hidden" name="_token" value="{{ csrf_token('notifications_mark_all_read') }}">
+                <input type="hidden" name="redirect_to" value="dropdown">
+                <button type="submit" class="text-xs text-muted-foreground hover:text-foreground">Mark all read</button>
+            </form>
+        {% endif %}
+    </div>
+    <div class="max-h-96 overflow-y-auto">
+        {% for notification in notifications %}
+            <div class="flex items-start gap-2 border-b border-border px-4 py-3 last:border-b-0 {{ notification.read ? '' : 'bg-accent/30' }}">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-popover-foreground">{{ notification.title }}</p>
+                    <p class="mt-0.5 text-xs text-muted-foreground">{{ notification.body }}</p>
+                    <p class="mt-1 text-[11px] text-muted-foreground">{{ notification.createdAt|date('M j, g:ia') }}</p>
+                </div>
+                {% if not notification.read %}
+                    <form method="POST" action="{{ path('notifications_mark_read', {id: notification.id}) }}" data-turbo-frame="notification-dropdown">
+                        <input type="hidden" name="_token" value="{{ csrf_token('notifications_mark_read_' ~ notification.id) }}">
+                        <input type="hidden" name="redirect_to" value="dropdown">
+                        <button type="submit" class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20">
+                            Mark read
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="px-4 py-6 text-center text-sm text-muted-foreground">No notifications yet.</p>
+        {% endfor %}
+    </div>
+    <div class="border-t border-border px-4 py-2.5">
+        <a href="{{ path('notifications_index') }}" class="text-xs font-medium text-primary hover:underline">View all notifications</a>
+    </div>
+</turbo-frame>
