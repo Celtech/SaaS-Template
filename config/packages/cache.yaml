@@ -36,6 +36,11 @@ framework:
                 provider: '%env(REDIS_DSN)%'
                 default_lifetime: 3600
 
+            # Backs the api_client/api_org RateLimiter counters (see rate_limiter.yaml).
+            cache.rate_limiter:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_DSN)%'
+
 when@test:
     framework:
         cache:
@@ -48,4 +53,11 @@ when@test:
                     provider: ~
                 cache.oauth_tokens:
                     adapter: cache.adapter.array
+                    provider: ~
+                # Not cache.adapter.array here: ArrayAdapter implements ResettableInterface
+                # and gets wiped by Symfony's services_resetter after every single request
+                # in a functional test — which would silently defeat rate limiting, since
+                # every request would see a freshly reset counter. Filesystem isn't reset.
+                cache.rate_limiter:
+                    adapter: cache.adapter.filesystem
                     provider: ~

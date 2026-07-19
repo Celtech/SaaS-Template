@@ -393,7 +393,7 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [x] Credential generation: `client_id`/`client_secret` random bytes; hash stored; full secret shown **once** on creation
 - [x] `OAuthTokenAuthenticator` Symfony Security authenticator (Bearer token) — now exercised against real `/api/v1/*` endpoints; see "Functional tests" below
 - [x] Tokens and codes never logged: `SensitiveDataProcessor` covers `token`, `client_secret`, `authorization`, `device_code`, `user_code`, `code_verifier`
-- [ ] Rate limiting via Symfony RateLimiter (per client and per org, configurable limits)
+- [x] Rate limiting via Symfony RateLimiter (per client and per org, configurable via `API_RATE_LIMIT_CLIENT_PER_MINUTE`/`API_RATE_LIMIT_ORG_PER_MINUTE`)
 - [x] `/api/v1/` route prefix, versioned from day one
 - [x] `ApiController` base: standard `{"data": ...}` JSON envelope; `ApiExceptionListener` renders every exception on `/api/*` as RFC 7807 Problem Details
 - [ ] **Idempotency-Key middleware**: Symfony event listener on all mutating requests (`POST`, `PATCH`, `DELETE`)
@@ -406,8 +406,8 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [x] `AuditLogger` events: client created/updated/deleted/secret regenerated, token issued/revoked, authorization/device-code granted/denied
 - [x] Starter endpoints: `GET /api/v1/me` (works for both delegated and Client Credentials tokens, scope-gated fields), `GET /api/v1/organizations` (requires `org:read`)
 - [ ] ~~OpenAPI annotations + NelmioApiDocBundle (`/api/docs`)~~ — explicitly out of scope for this template by operator decision
-- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect, `/api/v1/me` and `/api/v1/organizations` (401/403/200 paths) — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`, `MeControllerTest`, `OrganizationsControllerTest`
-- [ ] Rate limit (429) and idempotency tests — not applicable until those controls exist
+- [x] Functional tests: auth (all 4 grants), invalid client, scope enforcement, token exchange/refresh/revoke/introspect, `/api/v1/me` and `/api/v1/organizations` (401/403/200 paths), rate limit 429s (per-client and per-org) — via `OAuthControllerTest`, `AuthorizeControllerTest`, `DeviceVerifyControllerTest`, `MeControllerTest`, `OrganizationsControllerTest`, `ApiRateLimitListenerTest`
+- [ ] Idempotency tests — not applicable until the idempotency middleware exists
 
 **Branch:** `feat/oauth-developer-area`
 
