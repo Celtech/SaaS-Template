@@ -9,3 +9,10 @@
 
 controllers:
     resource: routing.controllers
+
+when@test:
+    # Test-only mutating endpoint for IdempotencyKeyListenerTest — see
+    # tests/Support/IdempotencyTestController.php. Never loaded outside tests.
+    test_controllers:
+        resource: 'App\Tests\Support\IdempotencyTestController'
+        type: attribute
