@@ -438,16 +438,16 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 > Goal: extensible, channel-agnostic notification pipeline. In-app and email from day one; Slack, Discord, SMS addable without core changes.
 
 **Core Infrastructure**
-- [ ] `Notification` entity (UUID v7, user, type, channel, title, body, action_url, read_at, created_at): append-only, never updated in place
-- [ ] `NotificationPreference` entity (user, notification_type, channel, enabled): per-user per-type per-channel opt-in/out
-- [ ] `NotificationChannelInterface`: `supports(string $channel): bool`, `send(Notification $notification): void`
-- [ ] `NotificationDispatcher` service: resolves which channels are enabled for user+type, dispatches `SendNotificationMessage` per channel via Messenger
-- [ ] `SendNotificationMessage` + `SendNotificationHandler`: writes `Notification` record, delegates to channel driver
+- [x] `Notification` entity (UUID v7, user, type, channel, title, body, action_url, read_at, created_at): append-only except `readAt`
+- [x] `NotificationPreference` entity (user, notification_type, channel, enabled): per-user per-type per-channel opt-in/out
+- [x] `NotificationChannelInterface`: `supports(string $channel): bool`, `send(Notification $notification): void`
+- [x] `NotificationDispatcher` service: resolves which channels are enabled for user+type, dispatches `SendNotificationMessage` per channel via Messenger
+- [x] `SendNotificationMessage` + `SendNotificationHandler`: writes `Notification` record, delegates to channel driver
 
 **Channel Drivers**
-- [ ] `InAppNotificationChannel`: writes to `notification` table; no external call
-- [ ] `EmailNotificationChannel`: renders a Twig template and dispatches via `SendMailMessage`
-- [ ] Channel registration via Symfony DI tag (`app.notification_channel`): adding Slack/Discord requires implementing the interface and tagging the service
+- [x] `InAppNotificationChannel`: no-op — the row `SendNotificationHandler` already wrote is itself the in-app delivery
+- [x] `EmailNotificationChannel`: renders `email/notification.html.twig` and dispatches via `SendMailMessage`
+- [x] Channel registration via Symfony DI tag (`app.notification_channel`, via `_instanceof` on `NotificationChannelInterface`): adding Slack/Discord requires implementing the interface and tagging the service
 
 **UI**
 - [ ] Notification bell icon in `Topbar` with unread count badge (polled via Turbo Stream every 30s)
@@ -465,8 +465,8 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [ ] `security.session_revoked`: email when a session is remotely revoked
 
 **Tests**
-- [ ] Unit: `NotificationDispatcher` channel resolution, preference checking, each channel driver
-- [ ] Integration: full dispatch pipeline (in-app persisted, email queued)
+- [x] Unit: `NotificationDispatcher` channel resolution, preference checking, each channel driver
+- [x] Integration: full dispatch pipeline (in-app persisted, email queued)
 - [ ] Functional: unread count in UI, mark as read, preferences save/load
 - [ ] Browser smoke test: trigger notification, see bell badge update, mark read
 
