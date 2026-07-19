@@ -28,6 +28,8 @@ final class DeveloperController extends AbstractController
     #[Route('/apps', name: 'developer_apps_index', methods: ['GET'])]
     public function apps(OAuthClientRepository $clients): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.view');
+
         /** @var User $user */
         $user = $this->getUser();
         $org = $user->getOrganization();
@@ -40,6 +42,8 @@ final class DeveloperController extends AbstractController
     #[Route('/apps/new', name: 'developer_apps_new', methods: ['GET', 'POST'])]
     public function newApp(Request $request, ClientService $clientService): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.manage');
+
         /** @var User $user */
         $user = $this->getUser();
         $org = $user->getOrganization();
@@ -82,6 +86,7 @@ final class DeveloperController extends AbstractController
     #[Route('/apps/{id}', name: 'developer_apps_show', methods: ['GET'])]
     public function showApp(OAuthClient $client, Request $request): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.view');
         $this->denyAccessUnlessOrgOwnsClient($client);
 
         $sessionKey = '_oauth_new_secret_' . $client->getId()->toRfc4122();
@@ -99,6 +104,7 @@ final class DeveloperController extends AbstractController
     #[Route('/apps/{id}/edit', name: 'developer_apps_edit', methods: ['GET', 'POST'])]
     public function editApp(OAuthClient $client, Request $request, OAuthClientRepository $clients): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.manage');
         $this->denyAccessUnlessOrgOwnsClient($client);
 
         $form = $this->createForm(OAuthClientType::class, [
@@ -137,6 +143,7 @@ final class DeveloperController extends AbstractController
     #[Route('/apps/{id}/regenerate-secret', name: 'developer_apps_regenerate_secret', methods: ['POST'])]
     public function regenerateSecret(OAuthClient $client, Request $request, ClientService $clientService): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.manage');
         $this->denyAccessUnlessOrgOwnsClient($client);
 
         if (!$this->isCsrfTokenValid('regenerate_secret_' . $client->getId()->toRfc4122(), $request->request->getString('_token'))) {
@@ -156,6 +163,7 @@ final class DeveloperController extends AbstractController
     #[Route('/apps/{id}/delete', name: 'developer_apps_delete', methods: ['POST'])]
     public function deleteApp(OAuthClient $client, Request $request, ClientService $clientService): Response
     {
+        $this->denyAccessUnlessGranted('org.api_keys.manage');
         $this->denyAccessUnlessOrgOwnsClient($client);
 
         if (!$this->isCsrfTokenValid('delete_client_' . $client->getId()->toRfc4122(), $request->request->getString('_token'))) {

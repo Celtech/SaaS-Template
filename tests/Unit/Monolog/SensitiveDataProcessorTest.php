@@ -146,4 +146,26 @@ final class SensitiveDataProcessorTest extends UnitTestCase
         $this->assertSame('[REDACTED]', $result->context['ssn']);
         $this->assertSame('[REDACTED]', $result->context['pan']);
     }
+
+    #[Test]
+    public function itRedactsOAuthDeviceFlowFields(): void
+    {
+        $record = $this->makeRecord([
+            'device_code' => 'GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS',
+            'user_code' => 'WDJB-MJHT',
+        ]);
+        $result = ($this->processor)($record);
+
+        $this->assertSame('[REDACTED]', $result->context['device_code']);
+        $this->assertSame('[REDACTED]', $result->context['user_code']);
+    }
+
+    #[Test]
+    public function itRedactsPkceCodeVerifier(): void
+    {
+        $record = $this->makeRecord(['code_verifier' => 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk']);
+        $result = ($this->processor)($record);
+
+        $this->assertSame('[REDACTED]', $result->context['code_verifier']);
+    }
 }

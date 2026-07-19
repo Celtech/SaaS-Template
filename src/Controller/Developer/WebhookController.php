@@ -24,6 +24,8 @@ final class WebhookController extends AbstractController
     #[Route('', name: 'developer_webhooks_index', methods: ['GET'])]
     public function index(WebhookEndpointRepository $endpoints): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.view');
+
         /** @var User $user */
         $user = $this->getUser();
         $org = $user->getOrganization();
@@ -36,6 +38,8 @@ final class WebhookController extends AbstractController
     #[Route('/new', name: 'developer_webhooks_new', methods: ['GET', 'POST'])]
     public function newEndpoint(Request $request, WebhookEndpointService $endpointService): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.manage');
+
         /** @var User $user */
         $user = $this->getUser();
         $org = $user->getOrganization();
@@ -71,6 +75,7 @@ final class WebhookController extends AbstractController
     #[Route('/{id}', name: 'developer_webhooks_show', methods: ['GET'])]
     public function showEndpoint(WebhookEndpoint $endpoint, Request $request, WebhookDeliveryRepository $deliveries): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.view');
         $this->denyAccessUnlessOrgOwnsEndpoint($endpoint);
 
         $sessionKey = '_webhook_new_secret_' . $endpoint->getId()->toRfc4122();
@@ -89,6 +94,7 @@ final class WebhookController extends AbstractController
     #[Route('/{id}/edit', name: 'developer_webhooks_edit', methods: ['GET', 'POST'])]
     public function editEndpoint(WebhookEndpoint $endpoint, Request $request, WebhookEndpointService $endpointService): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.manage');
         $this->denyAccessUnlessOrgOwnsEndpoint($endpoint);
 
         /** @var User $user */
@@ -127,6 +133,7 @@ final class WebhookController extends AbstractController
     #[Route('/{id}/regenerate-secret', name: 'developer_webhooks_regenerate_secret', methods: ['POST'])]
     public function regenerateSecret(WebhookEndpoint $endpoint, Request $request, WebhookEndpointService $endpointService): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.manage');
         $this->denyAccessUnlessOrgOwnsEndpoint($endpoint);
 
         if (!$this->isCsrfTokenValid('regenerate_webhook_secret_' . $endpoint->getId()->toRfc4122(), $request->request->getString('_token'))) {
@@ -146,6 +153,7 @@ final class WebhookController extends AbstractController
     #[Route('/{id}/test', name: 'developer_webhooks_test', methods: ['POST'])]
     public function testEndpoint(WebhookEndpoint $endpoint, Request $request, WebhookDispatcher $dispatcher): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.manage');
         $this->denyAccessUnlessOrgOwnsEndpoint($endpoint);
 
         if (!$this->isCsrfTokenValid('test_webhook_' . $endpoint->getId()->toRfc4122(), $request->request->getString('_token'))) {
@@ -161,6 +169,7 @@ final class WebhookController extends AbstractController
     #[Route('/{id}/delete', name: 'developer_webhooks_delete', methods: ['POST'])]
     public function deleteEndpoint(WebhookEndpoint $endpoint, Request $request, WebhookEndpointService $endpointService): Response
     {
+        $this->denyAccessUnlessGranted('org.webhooks.manage');
         $this->denyAccessUnlessOrgOwnsEndpoint($endpoint);
 
         if (!$this->isCsrfTokenValid('delete_webhook_' . $endpoint->getId()->toRfc4122(), $request->request->getString('_token'))) {
