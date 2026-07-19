@@ -46,6 +46,8 @@ services:
     _instanceof:
         App\Security\Enforcement\SecurityEnforcementInterface:
             tags: ['app.security_enforcement']
+        App\Service\Notification\NotificationChannelInterface:
+            tags: ['app.notification_channel']
 
     App\EventSubscriber\SecurityEnforcementSubscriber:
         arguments:
