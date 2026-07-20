@@ -32,7 +32,15 @@ final class SecurityHeadersListener
             'Content-Security-Policy',
             implode('; ', [
                 "default-src 'self'",
-                "script-src 'self'{$nonceDirective}",
+                // 'data:' is required because Symfony AssetMapper imports CSS as a JS module
+                // (see assets/app.js: `import './styles/app.css'`) and maps that specifier to
+                // an empty 'data:application/javascript,' placeholder in the importmap — the
+                // actual stylesheet is still applied via a normal <link rel="stylesheet">, this
+                // placeholder is never anything but empty. Without it, that import fails to
+                // resolve, which aborts the whole app.js module graph before it reaches
+                // stimulus_bootstrap.js — breaking every Stimulus controller on the page,
+                // including the dropdown menus.
+                "script-src 'self' data:{$nonceDirective}",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data:",
                 "font-src 'self'",

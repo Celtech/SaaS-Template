@@ -78,6 +78,18 @@ final class SecurityHeadersListenerTest extends UnitTestCase
     }
 
     #[Test]
+    public function contentSecurityPolicyAllowsDataScriptsForAssetMapperCssImports(): void
+    {
+        // Symfony AssetMapper imports CSS as a JS module (assets/app.js) which the importmap
+        // resolves to an empty 'data:application/javascript,' placeholder — without 'data:'
+        // here, that import fails and aborts the whole module graph before Stimulus bootstraps.
+        $response = $this->dispatchMainRequest(new Request());
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("script-src 'self' data:", (string) $csp);
+    }
+
+    #[Test]
     public function contentSecurityPolicyBlocksFrameAncestors(): void
     {
         $response = $this->dispatchMainRequest(new Request());
