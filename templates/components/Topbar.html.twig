@@ -3,6 +3,9 @@
     <div>{% block breadcrumb %}{% endblock %}</div>
     <div class="flex items-center gap-4">
         {% block topbar_actions %}{% endblock %}
+        {% if app.user and not admin %}
+            {{ render(controller('App\\Controller\\NotificationController::bell')) }}
+        {% endif %}
         {% if app.user %}
             <div class="relative" data-controller="dropdown">
                 <button
