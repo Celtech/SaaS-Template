@@ -37,6 +37,25 @@ class UserSessionRepository extends ServiceEntityRepository
         return $this->findOneBy(['sessionTokenHash' => $hash, 'revokedAt' => null]);
     }
 
+    /** Has this user ever had a session (active or not) from this IP before? Used for new-login detection. */
+    public function hasSessionFromIp(User $user, ?string $ip): bool
+    {
+        if ($ip === null || $ip === '') {
+            return true; // can't compare — assume known rather than notify on every login
+        }
+
+        $count = (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.user = :user')
+            ->andWhere('s.ipAddress = :ip')
+            ->setParameter('user', $user)
+            ->setParameter('ip', $ip)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
     public function revokeAllForUser(User $user, ?string $exceptTokenHash = null): int
     {
         $qb = $this->createQueryBuilder('s')

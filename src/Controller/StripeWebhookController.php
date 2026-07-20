@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Organization;
+use App\Entity\Permission;
+use App\Enum\NotificationType;
 use App\Repository\PlanRepository;
 use App\Repository\SubscriptionRepository;
+use App\Repository\UserRoleRepository;
 use App\Service\Audit\AuditLogger;
 use App\Service\Billing\SubscriptionManager;
+use App\Service\Notification\NotificationDispatcher;
 use App\Service\Stripe\StripeService;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
@@ -22,6 +27,7 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use UnexpectedValueException;
 
 #[Route('/stripe/webhook', name: 'stripe_webhook', methods: ['POST'])]
@@ -35,6 +41,9 @@ final class StripeWebhookController extends AbstractController
         private readonly StripeService $stripeService,
         private readonly AuditLogger $auditLogger,
         private readonly LoggerInterface $logger,
+        private readonly UserRoleRepository $userRoles,
+        private readonly NotificationDispatcher $notifications,
+        private readonly UrlGeneratorInterface $urlGenerator,
         #[Target('cache.stripe_webhooks')]
         private readonly CacheItemPoolInterface $eventCache,
     ) {
@@ -165,6 +174,13 @@ final class StripeWebhookController extends AbstractController
             ['status' => $subscription->getStatus()->value],
             ['stripe_subscription_id' => $stripeSubscription->id],
         );
+
+        $this->notifyBillingAdmins(
+            $subscription->getOrganization(),
+            NotificationType::BillingSubscriptionCancelled,
+            'Subscription cancelled',
+            'Your subscription has been cancelled.',
+        );
     }
 
     private function handleInvoicePaymentSucceeded(Event $event): void
@@ -232,6 +248,22 @@ final class StripeWebhookController extends AbstractController
             'invoice_id' => $invoice->id,
             'attempt_count' => $invoice->attempt_count,
         ]);
+
+        $this->notifyBillingAdmins(
+            $subscription->getOrganization(),
+            NotificationType::BillingPaymentFailed,
+            'Payment failed',
+            'Your invoice payment failed. Please update your billing details.',
+        );
+    }
+
+    private function notifyBillingAdmins(Organization $organization, NotificationType $type, string $title, string $body): void
+    {
+        $actionUrl = $this->urlGenerator->generate('org_settings_billing', [], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        foreach ($this->userRoles->findUsersWithPermissionInOrg($organization->getId(), Permission::OrgBillingManage) as $user) {
+            $this->notifications->dispatch($user, $type, $title, $body, $actionUrl);
+        }
     }
 
     /**

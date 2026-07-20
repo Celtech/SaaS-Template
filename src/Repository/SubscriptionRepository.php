@@ -55,6 +55,30 @@ class SubscriptionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Trialing subscriptions whose trial ends within the given day window from now.
+     * Used by the daily "trial expiring soon" notification — a 24h-wide window run
+     * once a day means each trial is only ever caught by exactly one run.
+     *
+     * @return Subscription[]
+     */
+    public function findTrialsEndingBetween(int $fromDays, int $toDays): array
+    {
+        $from = new DateTimeImmutable(\sprintf('+%d days', $fromDays));
+        $to = new DateTimeImmutable(\sprintf('+%d days', $toDays));
+
+        return $this->createQueryBuilder('s')
+            ->where('s.status = :status')
+            ->andWhere('s.trialEndsAt IS NOT NULL')
+            ->andWhere('s.trialEndsAt >= :from')
+            ->andWhere('s.trialEndsAt < :to')
+            ->setParameter('status', SubscriptionStatus::Trialing)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Returns past_due subscriptions where the grace period has elapsed.
      * Used by the scheduler to hard-block background jobs.
      *

@@ -4,17 +4,28 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use App\Entity\Plan;
+use App\Entity\Subscription;
+use App\Entity\SubscriptionStatus;
+use App\Entity\User;
+use App\Message\Notification\SendNotificationMessage;
 use App\Tests\FunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class StripeWebhookControllerTest extends FunctionalTestCase
 {
     private string $webhookSecret;
+    private InMemoryTransport $transport;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->webhookSecret = $_SERVER['STRIPE_WEBHOOK_SECRET'] ?? '';
+        $transport = static::getContainer()->get('messenger.transport.async');
+        \assert($transport instanceof InMemoryTransport);
+        $this->transport = $transport;
+        $this->transport->reset();
     }
 
     // -------------------------------------------------------------------------
@@ -189,9 +200,95 @@ final class StripeWebhookControllerTest extends FunctionalTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    #[Test]
+    public function invoicePaymentFailedNotifiesTheOrgOwner(): void
+    {
+        $owner = $this->createUserWithOrg('billing-fail-owner@example.com');
+        $this->createSubscriptionForOwner($owner, 'sub_fail_notify');
+
+        $payload = $this->buildEventPayload(
+            'invoice.payment_failed',
+            $this->invoiceObject('in_test_fail_notify', 'sub_fail_notify', 9900, attempt_count: 1)
+        );
+
+        $this->client->request(
+            'POST',
+            '/stripe/webhook',
+            [],
+            [],
+            ['HTTP_Stripe-Signature' => $this->sign($payload), 'CONTENT_TYPE' => 'application/json'],
+            $payload
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        // BillingPaymentFailed defaults to both in_app and email channels.
+        $sent = $this->notificationMessagesFor($owner);
+        $this->assertCount(2, $sent);
+        $this->assertSame('billing.payment_failed', $sent[0]->type);
+    }
+
+    // -------------------------------------------------------------------------
+    // customer.subscription.deleted — happy path
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function subscriptionDeletedNotifiesTheOrgOwner(): void
+    {
+        $owner = $this->createUserWithOrg('billing-cancel-owner@example.com');
+        $this->createSubscriptionForOwner($owner, 'sub_cancel_notify');
+
+        $payload = $this->buildEventPayload('customer.subscription.deleted', $this->subscriptionObject('sub_cancel_notify', 'canceled'));
+
+        $this->client->request(
+            'POST',
+            '/stripe/webhook',
+            [],
+            [],
+            ['HTTP_Stripe-Signature' => $this->sign($payload), 'CONTENT_TYPE' => 'application/json'],
+            $payload
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $sent = $this->notificationMessagesFor($owner);
+        $this->assertCount(2, $sent);
+        $this->assertSame('billing.subscription_cancelled', $sent[0]->type);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private function createSubscriptionForOwner(User $owner, string $stripeSubscriptionId): void
+    {
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $plan = new Plan('free-' . $stripeSubscriptionId, 'Free');
+        $this->em->persist($plan);
+
+        $subscription = new Subscription($org, $plan, SubscriptionStatus::Active);
+        $subscription->setStripeSubscriptionId($stripeSubscriptionId);
+        $subscription->setStripeCustomerId('cus_test_123');
+        $this->em->persist($subscription);
+        $this->em->flush();
+    }
+
+    /** @return SendNotificationMessage[] */
+    private function notificationMessagesFor(User $user): array
+    {
+        $messages = [];
+
+        foreach ($this->transport->getSent() as $envelope) {
+            $message = $envelope->getMessage();
+            if ($message instanceof SendNotificationMessage && $message->userId === $user->getId()->toRfc4122()) {
+                $messages[] = $message;
+            }
+        }
+
+        return $messages;
+    }
 
     private function sign(string $payload): string
     {

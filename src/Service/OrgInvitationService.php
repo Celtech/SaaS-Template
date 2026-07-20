@@ -6,13 +6,17 @@ namespace App\Service;
 
 use App\Entity\Organization;
 use App\Entity\OrgInvitation;
+use App\Entity\Permission;
 use App\Entity\User;
 use App\Entity\UserRole;
+use App\Enum\NotificationType;
 use App\Enum\WebhookEvent;
 use App\Message\Mail\SendMailMessage;
 use App\Repository\OrgInvitationRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
+use App\Repository\UserRoleRepository;
+use App\Service\Notification\NotificationDispatcher;
 use App\Service\Webhook\WebhookDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -26,9 +30,11 @@ final class OrgInvitationService
         private readonly OrgInvitationRepository $invitationRepository,
         private readonly UserRepository $userRepository,
         private readonly RoleRepository $roleRepository,
+        private readonly UserRoleRepository $userRoleRepository,
         private readonly MessageBusInterface $bus,
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly WebhookDispatcher $webhookDispatcher,
+        private readonly NotificationDispatcher $notificationDispatcher,
     ) {
     }
 
@@ -72,6 +78,14 @@ final class OrgInvitationService
             'organization_id' => $org->getId()->toRfc4122(),
         ]);
 
+        $this->notifyOrgAdmins(
+            $org,
+            NotificationType::OrgMemberInvited,
+            'New member invited',
+            \sprintf('%s invited %s to join %s.', $invitedBy->getName(), $email, $org->getName()),
+            excluding: $invitedBy,
+        );
+
         return $invitation;
     }
 
@@ -94,5 +108,25 @@ final class OrgInvitationService
             'email' => $user->getEmail(),
             'organization_id' => $org->getId()->toRfc4122(),
         ]);
+
+        $this->notifyOrgAdmins(
+            $org,
+            NotificationType::OrgMemberJoined,
+            'New member joined',
+            \sprintf('%s joined %s.', $user->getName(), $org->getName()),
+        );
+    }
+
+    private function notifyOrgAdmins(Organization $org, NotificationType $type, string $title, string $body, ?User $excluding = null): void
+    {
+        $actionUrl = $this->urlGenerator->generate('org_settings', [], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        foreach ($this->userRoleRepository->findUsersWithPermissionInOrg($org->getId(), Permission::OrgMembersManage) as $admin) {
+            if ($excluding !== null && $admin->getId()->equals($excluding->getId())) {
+                continue;
+            }
+
+            $this->notificationDispatcher->dispatch($admin, $type, $title, $body, $actionUrl);
+        }
     }
 }

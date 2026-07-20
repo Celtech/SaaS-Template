@@ -5,13 +5,29 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller\Org;
 
 use App\Entity\OrgInvitation;
+use App\Entity\User;
+use App\Entity\UserRole;
+use App\Message\Notification\SendNotificationMessage;
+use App\Repository\RoleRepository;
 use App\Tests\FunctionalTestCase;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
+use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class OrgInviteControllerTest extends FunctionalTestCase
 {
+    private InMemoryTransport $transport;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $transport = static::getContainer()->get('messenger.transport.async');
+        \assert($transport instanceof InMemoryTransport);
+        $this->transport = $transport;
+        $this->transport->reset();
+    }
+
     #[Test]
     public function invitePageRequiresPermission(): void
     {
@@ -20,9 +36,9 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertNotNull($org);
 
         $member = $this->createVerifiedUser('invite-member@example.com');
-        $memberRole = static::getContainer()->get(\App\Repository\RoleRepository::class)->findBySlug('org-member');
+        $memberRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-member');
         $this->assertNotNull($memberRole);
-        $this->em->persist(new \App\Entity\UserRole($member, $memberRole, $org->getId()));
+        $this->em->persist(new UserRole($member, $memberRole, $org->getId()));
         $member->setOrganization($org);
         $this->em->flush();
 
@@ -128,7 +144,7 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertResponseRedirects('/auth/login');
 
         $this->em->clear();
-        $newUser = $this->em->getRepository(\App\Entity\User::class)->findByEmail('invited@example.com');
+        $newUser = $this->em->getRepository(User::class)->findByEmail('invited@example.com');
         $this->assertNotNull($newUser);
         $this->assertTrue($newUser->isEmailVerified());
         $this->assertNotNull($newUser->getOrganization());
@@ -166,7 +182,7 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertResponseRedirects('/auth/verify-email-notice');
 
         $this->em->clear();
-        $newUser = $this->em->getRepository(\App\Entity\User::class)->findByEmail('expired@example.com');
+        $newUser = $this->em->getRepository(User::class)->findByEmail('expired@example.com');
         $this->assertNotNull($newUser);
         $this->assertNull($newUser->getOrganization());
     }
@@ -203,9 +219,9 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertNotNull($org);
 
         $member = $this->createVerifiedUser('revoke-perm-member@example.com');
-        $memberRole = static::getContainer()->get(\App\Repository\RoleRepository::class)->findBySlug('org-member');
+        $memberRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-member');
         $this->assertNotNull($memberRole);
-        $this->em->persist(new \App\Entity\UserRole($member, $memberRole, $org->getId()));
+        $this->em->persist(new UserRole($member, $memberRole, $org->getId()));
         $member->setOrganization($org);
 
         $invitation = new OrgInvitation($org, 'someone@example.com', $owner);
@@ -243,6 +259,76 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('body', 'listed@example.com');
         $this->assertSelectorTextContains('body', 'Pending invitations');
+    }
+
+    #[Test]
+    public function sendingAnInvitationNotifiesOtherOrgAdminsButNotTheSender(): void
+    {
+        $owner = $this->createUserWithOrg('invite-notify-owner@example.com', 'Password123!', 'Owner');
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $otherAdmin = $this->createVerifiedUser('invite-notify-other-admin@example.com');
+        $adminRole = static::getContainer()->get(RoleRepository::class)->findBySlug('org-admin');
+        $this->assertNotNull($adminRole);
+        $this->em->persist(new UserRole($otherAdmin, $adminRole, $org->getId()));
+        $otherAdmin->setOrganization($org);
+        $this->em->flush();
+
+        $this->client->loginUser($owner);
+        $this->client->request('POST', '/org/invite', [
+            'org_invite' => ['email' => 'invite-notify-target@example.com', '_token' => $this->getCsrfToken('org_invite')],
+        ]);
+
+        $this->assertResponseRedirects('/org/settings');
+
+        $this->assertCount(0, $this->notificationMessagesFor($owner));
+        $sent = $this->notificationMessagesFor($otherAdmin);
+        $this->assertCount(1, $sent);
+        $this->assertSame('org.member_invited', $sent[0]->type);
+    }
+
+    #[Test]
+    public function acceptingAnInvitationNotifiesOrgAdmins(): void
+    {
+        $owner = $this->createUserWithOrg('invite-join-notify-owner@example.com', 'Password123!', 'Owner');
+        $org = $owner->getOrganization();
+        $this->assertNotNull($org);
+
+        $invitation = new OrgInvitation($org, 'invite-join-notify@example.com', $owner);
+        $this->em->persist($invitation);
+        $this->em->flush();
+
+        $this->client->request('POST', '/auth/register?invite=' . $invitation->getToken(), [
+            'registration_form' => [
+                'name' => 'Joined Person',
+                'email' => 'invite-join-notify@example.com',
+                'plainPassword' => ['first' => 'Password123!', 'second' => 'Password123!'],
+                'agreeTerms' => '1',
+                '_token' => $this->getCsrfToken('registration_form'),
+            ],
+        ]);
+
+        $this->assertResponseRedirects('/auth/login');
+
+        $sent = $this->notificationMessagesFor($owner);
+        $this->assertCount(1, $sent);
+        $this->assertSame('org.member_joined', $sent[0]->type);
+    }
+
+    /** @return SendNotificationMessage[] */
+    private function notificationMessagesFor(User $user): array
+    {
+        $messages = [];
+
+        foreach ($this->transport->getSent() as $envelope) {
+            $message = $envelope->getMessage();
+            if ($message instanceof SendNotificationMessage && $message->userId === $user->getId()->toRfc4122()) {
+                $messages[] = $message;
+            }
+        }
+
+        return $messages;
     }
 
     private function getCsrfToken(string $tokenId): string

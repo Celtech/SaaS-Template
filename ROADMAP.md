@@ -456,13 +456,13 @@ Stripe Checkout + Customer Portal means we never handle, process, or store raw c
 - [x] **Notification preferences page** (in user profile settings): per-type toggles per channel; a type only shows the channels it supports (e.g. org events are in-app only)
 
 **Built-in Notification Types**
-- [ ] `billing.payment_failed`: email + in-app when invoice fails
-- [ ] `billing.trial_expiring`: email + in-app 3 days before trial ends (Scheduler task)
-- [ ] `billing.subscription_cancelled`: email + in-app
-- [ ] `org.member_invited`: in-app to org admins
-- [ ] `org.member_joined`: in-app to org admins
-- [ ] `security.new_login`: email on login from new IP/device (opt-in, off by default)
-- [ ] `security.session_revoked`: email when a session is remotely revoked
+- [x] `billing.payment_failed`: email + in-app when invoice fails — `StripeWebhookController::handleInvoicePaymentFailed()`, notifies every org member with `org.billing.manage`
+- [x] `billing.trial_expiring`: email + in-app 3 days before trial ends — `NotifyTrialsExpiringSoonHandler`, daily Scheduler task at 09:00 UTC, notifies `org.billing.manage` holders
+- [x] `billing.subscription_cancelled`: email + in-app — `StripeWebhookController::handleSubscriptionDeleted()`, notifies `org.billing.manage` holders
+- [x] `org.member_invited`: in-app to org admins — `OrgInvitationService::sendInvite()`, notifies `org.members.manage` holders excluding the inviter
+- [x] `org.member_joined`: in-app to org admins — `OrgInvitationService::acceptInvitation()`, notifies `org.members.manage` holders
+- [x] `security.new_login`: email on login from new IP/device (opt-in, off by default) — `AuthAuditSubscriber::onLoginSuccess()`, compares against `UserSessionRepository::hasSessionFromIp()`
+- [x] `security.session_revoked`: email when a session is remotely revoked — `SecurityController::revokeSession()`/`revokeAllSessions()` (self-service revoke; there's no admin-initiated remote revoke feature yet)
 
 **Tests**
 - [x] Unit: `NotificationDispatcher` channel resolution, preference checking, each channel driver
