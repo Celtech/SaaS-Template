@@ -47,4 +47,31 @@ class UserRoleRepository extends ServiceEntityRepository
 
         return $count > 0;
     }
+
+    /**
+     * Every user holding $permission within the org $contextId — used to fan out
+     * org-level notifications (billing alerts, member events) to the right people.
+     *
+     * @return User[]
+     */
+    public function findUsersWithPermissionInOrg(Uuid $contextId, Permission $permission): array
+    {
+        $em = $this->getEntityManager();
+
+        $userIds = $this->createQueryBuilder('ur')
+            ->select('IDENTITY(ur.user)')
+            ->join('ur.role', 'r')
+            ->join('r.permissions', 'rp')
+            ->where('ur.contextId = :contextId')
+            ->andWhere('rp.permissionKey = :permissionKey');
+
+        return $em->createQueryBuilder()
+            ->select('u')
+            ->from(User::class, 'u')
+            ->where($userIds->expr()->in('u.id', $userIds->getDQL()))
+            ->setParameter('contextId', $contextId)
+            ->setParameter('permissionKey', $permission->value)
+            ->getQuery()
+            ->getResult();
+    }
 }

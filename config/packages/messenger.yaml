@@ -19,6 +19,7 @@ framework:
             'App\Message\User\AnonymizeUserMessage': async
             'App\Message\Billing\ProcessExpiredTrialsMessage': async
             'App\Message\Billing\EnforceGracePeriodMessage': async
+            'App\Message\Billing\NotifyTrialsExpiringSoonMessage': async
             'App\Message\Notification\SendNotificationMessage': async
 
 when@test:

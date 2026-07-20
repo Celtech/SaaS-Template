@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\EventSubscriber;
 
 use App\Entity\User;
+use App\Enum\NotificationType;
+use App\Repository\UserSessionRepository;
 use App\Service\Audit\AuditLogger;
+use App\Service\Notification\NotificationDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
 
@@ -22,8 +26,12 @@ use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
  */
 final class AuthAuditSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly UserSessionRepository $sessions,
+        private readonly NotificationDispatcher $notifications,
+        private readonly UrlGeneratorInterface $urlGenerator,
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -43,13 +51,26 @@ final class AuthAuditSubscriber implements EventSubscriberInterface
         }
 
         $isAdmin = \in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true);
+        $ip = $event->getRequest()->getClientIp();
 
         $this->auditLogger->logAuth(
             'login.success',
             $user->getId()->toRfc4122(),
             $isAdmin ? 'admin_user' : 'user',
-            ['ip' => $event->getRequest()->getClientIp()],
+            ['ip' => $ip],
         );
+
+        // Fires before SessionTrackingListener (kernel.request, priority 0) creates this
+        // request's own UserSession row, so any prior row found here really is a past login.
+        if (!$this->sessions->hasSessionFromIp($user, $ip)) {
+            $this->notifications->dispatch(
+                $user,
+                NotificationType::SecurityNewLogin,
+                'New login detected',
+                \sprintf('A new login to your account was detected from %s.', $ip ?? 'an unknown location'),
+                $this->urlGenerator->generate('profile_security', [], UrlGeneratorInterface::ABSOLUTE_URL),
+            );
+        }
     }
 
     public function onLoginFailure(LoginFailureEvent $event): void

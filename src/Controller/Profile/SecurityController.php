@@ -7,10 +7,12 @@ namespace App\Controller\Profile;
 use App\Entity\DataErasureRequest;
 use App\Entity\User;
 use App\Entity\UserSession;
+use App\Enum\NotificationType;
 use App\Form\ChangePasswordForm;
 use App\Message\User\AnonymizeUserMessage;
 use App\Repository\UserSessionRepository;
 use App\Repository\WebauthnCredentialRepository;
+use App\Service\Notification\NotificationDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +32,7 @@ class SecurityController extends AbstractController
         private readonly UserSessionRepository $sessionRepository,
         private readonly MessageBusInterface $bus,
         private readonly WebauthnCredentialRepository $webauthnCredentialRepo,
+        private readonly NotificationDispatcher $notifications,
     ) {
     }
 
@@ -66,6 +69,7 @@ class SecurityController extends AbstractController
         $session->revoke();
         $this->em->flush();
 
+        $this->notifySessionRevoked($user);
         $this->addFlash('success', 'Session revoked.');
 
         return $this->redirectToRoute('profile_security');
@@ -75,11 +79,26 @@ class SecurityController extends AbstractController
     public function revokeAllSessions(Request $request, #[CurrentUser] User $user): Response
     {
         $currentTokenHash = hash('sha256', $request->getSession()->getId());
-        $this->sessionRepository->revokeAllForUser($user, $currentTokenHash);
+        $revoked = $this->sessionRepository->revokeAllForUser($user, $currentTokenHash);
+
+        if ($revoked > 0) {
+            $this->notifySessionRevoked($user);
+        }
 
         $this->addFlash('success', 'All other sessions have been revoked.');
 
         return $this->redirectToRoute('profile_security');
+    }
+
+    private function notifySessionRevoked(User $user): void
+    {
+        $this->notifications->dispatch(
+            $user,
+            NotificationType::SecuritySessionRevoked,
+            'Session revoked',
+            'A session on your account was revoked. If this wasn\'t you, change your password immediately.',
+            $this->generateUrl('profile_security'),
+        );
     }
 
     #[Route('/request-data-erasure', name: 'profile_request_erasure', methods: ['POST'])]
