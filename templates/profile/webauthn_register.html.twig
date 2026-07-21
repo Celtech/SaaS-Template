@@ -9,7 +9,7 @@
         <p class="mt-1 text-sm text-muted-foreground">Register a hardware key, fingerprint, or Face ID as a sign-in method</p>
     </div>
 
-    <div class="rounded-xl border bg-card p-6 shadow-sm">
+    <div class="rounded-[10px] border border-border p-6">
         <form method="post" action="{{ path('profile_webauthn_register_save') }}" id="register-form" class="space-y-5">
             <input type="hidden" name="_token" value="{{ csrf_token('webauthn_register') }}">
             <input type="hidden" name="response" id="webauthn-response">

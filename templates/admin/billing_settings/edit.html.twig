@@ -19,11 +19,11 @@
         <input type="hidden" name="_token" value="{{ csrf_token('billing_settings') }}">
 
         {# Trial settings #}
-        <div class="rounded-lg border bg-card">
-            <div class="border-b px-4 py-3">
-                <h2 class="font-medium text-foreground">Trial</h2>
+        <div class="rounded-[10px] border border-border">
+            <div class="border-b border-border px-4 py-3">
+                <h2 class="text-[15px] font-semibold text-foreground">Trial</h2>
             </div>
-            <div class="divide-y">
+            <div class="divide-y divide-muted">
                 <div class="flex items-center justify-between px-4 py-4">
                     <div>
                         <label for="trial_enabled" class="text-sm font-medium text-foreground">Enable trials</label>
@@ -41,7 +41,7 @@
                     </div>
                     <input type="number" id="trial_days" name="trial_days" min="1" max="365"
                            value="{{ settings.trialDays }}"
-                           class="w-24 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                           class="w-24 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                 </div>
 
                 <div class="flex items-center justify-between px-4 py-4">
@@ -50,7 +50,7 @@
                         <p class="text-xs text-muted-foreground mt-0.5">What happens when a trial expires without a paid subscription.</p>
                     </div>
                     <select id="trial_expiry_behavior" name="trial_expiry_behavior"
-                            class="rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                            class="rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                         {% for behavior in behaviors %}
                             <option value="{{ behavior.value }}" {{ settings.trialExpiryBehavior == behavior ? 'selected' : '' }}>
                                 {{ behavior.value|replace({'_': ' '})|capitalize }}
@@ -67,17 +67,17 @@
                     <input type="text" id="default_trial_plan_slug" name="default_trial_plan_slug"
                            value="{{ settings.defaultTrialPlanSlug ?: '' }}"
                            placeholder="e.g. pro"
-                           class="w-40 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                           class="w-40 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                 </div>
             </div>
         </div>
 
         {# Payment settings #}
-        <div class="rounded-lg border bg-card">
-            <div class="border-b px-4 py-3">
-                <h2 class="font-medium text-foreground">Payment</h2>
+        <div class="rounded-[10px] border border-border">
+            <div class="border-b border-border px-4 py-3">
+                <h2 class="text-[15px] font-semibold text-foreground">Payment</h2>
             </div>
-            <div class="divide-y">
+            <div class="divide-y divide-muted">
                 <div class="flex items-center justify-between px-4 py-4">
                     <div>
                         <label for="require_credit_card" class="text-sm font-medium text-foreground">Require credit card at signup</label>
@@ -96,13 +96,13 @@
                     </div>
                     <input type="number" id="grace_period_days" name="grace_period_days" min="0" max="30"
                            value="{{ settings.gracePeriodDays }}"
-                           class="w-24 rounded-md border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                           class="w-24 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                 </div>
             </div>
         </div>
 
         <div class="flex justify-end">
-            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            <button type="submit" class="rounded-md bg-primary px-[18px] py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">
                 Save settings
             </button>
         </div>

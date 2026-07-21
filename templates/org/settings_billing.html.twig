@@ -3,193 +3,190 @@
 {% block title %}Billing — Organization Settings{% endblock %}
 
 {% block main %}
-<div class="max-w-5xl space-y-8">
+<div class="space-y-6">
     <div>
         <h1 class="text-2xl font-semibold text-foreground">Organization</h1>
         <p class="mt-1 text-sm text-muted-foreground">Manage your organization settings and members.</p>
     </div>
 
-    <div class="flex gap-4 border-b text-sm">
-        <a href="{{ path('org_settings') }}" class="pb-3 text-muted-foreground hover:text-foreground">
-            General
-        </a>
-        <a href="{{ path('org_settings_billing') }}" class="border-b-2 border-primary pb-3 font-medium text-foreground">
-            Billing
-        </a>
-    </div>
+    <div class="grid grid-cols-[200px_1fr] gap-8">
+        {% include 'org/_tabs.html.twig' with {active: 'billing', billingEnabled: true} %}
 
-    {% for message in app.flashes('success') %}
-        <div class="rounded-lg bg-success/10 px-4 py-3 text-sm text-success">{{ message }}</div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
-    {% endfor %}
+        <div class="min-w-0 space-y-5">
+            {% for message in app.flashes('success') %}
+                <div class="rounded-lg bg-success/10 px-4 py-3 text-sm text-success">{{ message }}</div>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
+            {% endfor %}
 
-    {% if subscription is null %}
-        <div class="rounded-xl border bg-card p-6 shadow-sm">
-            <p class="text-sm text-muted-foreground">No active subscription found.</p>
-        </div>
-    {% else %}
-        {% set status = subscription.status.value %}
-        {% set isTrialing = status == 'trialing' %}
-        {% set isActive = status == 'active' %}
-        {% set isPastDue = status == 'past_due' %}
-        {% set isCanceled = status == 'canceled' or status == 'unpaid' %}
-        {% set hasStripe = subscription.stripeCustomerId is not null %}
-        {% set trialEndsAt = subscription.trialEndsAt %}
-        {% set now = "now"|date("U") %}
-        {% set trialDaysLeft = trialEndsAt ? ((trialEndsAt|date("U") - now) / 86400)|round(0, 'ceil') : 0 %}
-
-        {# Current plan card #}
-        <div class="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h2 class="text-base font-semibold text-card-foreground">Current plan</h2>
-                    <p class="mt-1 text-2xl font-bold text-foreground">{{ subscription.plan.name }}</p>
+            {% if subscription is null %}
+                <div class="rounded-[10px] border border-border p-6">
+                    <p class="text-sm text-muted-foreground">No active subscription found.</p>
                 </div>
-                <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                    {% if isActive %}bg-green-600 text-white
-                    {% elseif isTrialing %}bg-primary/10 text-primary
-                    {% elseif isPastDue %}bg-amber-500/10 text-amber-600 dark:text-amber-400
-                    {% else %}bg-destructive/10 text-destructive{% endif %}">
-                    {% if isActive %}Active
-                    {% elseif isTrialing %}Trial
-                    {% elseif isPastDue %}Past due
-                    {% elseif status == 'canceled' %}Canceled
-                    {% else %}{{ status|capitalize }}{% endif %}
-                </span>
-            </div>
+            {% else %}
+                {% set status = subscription.status.value %}
+                {% set isTrialing = status == 'trialing' %}
+                {% set isActive = status == 'active' %}
+                {% set isPastDue = status == 'past_due' %}
+                {% set isCanceled = status == 'canceled' or status == 'unpaid' %}
+                {% set hasStripe = subscription.stripeCustomerId is not null %}
+                {% set trialEndsAt = subscription.trialEndsAt %}
+                {% set now = "now"|date("U") %}
+                {% set trialDaysLeft = trialEndsAt ? ((trialEndsAt|date("U") - now) / 86400)|round(0, 'ceil') : 0 %}
 
-            <div class="divide-y text-sm">
-                {% if isTrialing and trialEndsAt %}
-                    <div class="flex items-center justify-between py-3 first:pt-0">
-                        <span class="text-muted-foreground">Trial ends</span>
-                        <span class="font-medium text-foreground">
-                            {{ trialEndsAt|date('M j, Y') }}
-                            {% if trialDaysLeft > 0 %}
-                                <span class="ml-1 text-xs text-muted-foreground">({{ trialDaysLeft }} day{{ trialDaysLeft != 1 ? 's' : '' }} left)</span>
-                            {% else %}
-                                <span class="ml-1 text-xs text-destructive">(expired)</span>
-                            {% endif %}
-                        </span>
-                    </div>
-                {% endif %}
-
-                {% if subscription.currentPeriodEnd %}
-                    <div class="flex items-center justify-between py-3 first:pt-0">
-                        <span class="text-muted-foreground">
-                            {% if subscription.cancelAtPeriodEnd %}Access until{% else %}Next billing date{% endif %}
-                        </span>
-                        <span class="font-medium text-foreground">{{ subscription.currentPeriodEnd|date('M j, Y') }}</span>
-                    </div>
-                {% endif %}
-
-                {% if not subscription.plan.free and not subscription.plan.customQuote %}
-                    <div class="flex items-center justify-between py-3 first:pt-0">
-                        <span class="text-muted-foreground">Plan price</span>
-                        <span class="font-medium text-foreground">
-                            {% if subscription.plan.monthlyPriceCents > 0 %}
-                                ${{ (subscription.plan.monthlyPriceCents / 100)|number_format(0) }}/mo
-                                {% if subscription.plan.annualPriceCents > 0 %}
-                                    or ${{ (subscription.plan.annualPriceCents / 100)|number_format(0) }}/yr
-                                {% endif %}
-                            {% else %}
-                                Free
-                            {% endif %}
-                        </span>
-                    </div>
-                {% endif %}
-
-                {% if subscription.cancelAtPeriodEnd %}
-                    <div class="py-3 first:pt-0">
-                        <p class="text-sm text-amber-600 dark:text-amber-400">
-                            Your subscription is set to cancel at the end of the current period. You can reactivate it at any time before then.
-                        </p>
-                    </div>
-                {% endif %}
-            </div>
-
-            {# Actions #}
-            <div class="flex flex-wrap gap-3 pt-2">
-                {% if hasStripe %}
-                    <form method="POST" action="{{ path('billing_portal') }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('billing_portal') }}">
-                        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                            Manage billing
-                        </button>
-                    </form>
-                {% elseif subscription.plan.free or isCanceled %}
-                    <a href="{{ path('billing_plans') }}" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                        Upgrade plan
-                    </a>
-                {% elseif isTrialing %}
-                    <a href="{{ path('billing_plans') }}" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                        Add payment method
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-
-        {# Billing history #}
-        {% if invoices|length > 0 %}
-        <div class="rounded-xl border bg-card shadow-sm">
-            <div class="border-b px-6 py-4">
-                <h2 class="text-base font-semibold text-card-foreground">Billing history</h2>
-                <p class="text-sm text-muted-foreground">Your recent invoices</p>
-            </div>
-            <ul class="divide-y">
-                {% for invoice in invoices %}
-                    <li class="flex items-center justify-between gap-4 px-6 py-4">
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-foreground">
-                                {{ invoice.created|date('M j, Y') }}
-                                {% if invoice.number %}
-                                    <span class="ml-1 text-xs text-muted-foreground">#{{ invoice.number }}</span>
-                                {% endif %}
-                            </p>
-                            <p class="text-xs text-muted-foreground">
-                                {% if invoice.status == 'paid' %}
-                                    <span class="text-success">Paid</span>
-                                {% elseif invoice.status == 'open' %}
-                                    <span class="text-amber-600 dark:text-amber-400">Open</span>
-                                {% else %}
-                                    {{ invoice.status|capitalize }}
-                                {% endif %}
-                                {% if invoice.lines.data|length > 0 %}
-                                    &middot; {{ invoice.lines.data[0].description }}
-                                {% endif %}
-                            </p>
+                {# Current plan card #}
+                <div class="rounded-[10px] border border-border p-6 space-y-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-[15px] font-semibold text-foreground">Current plan</h2>
+                            <p class="mt-1 text-2xl font-bold text-foreground">{{ subscription.plan.name }}</p>
                         </div>
-                        <div class="flex items-center gap-4 shrink-0">
-                            <span class="text-sm font-medium text-foreground">
-                                ${{ (invoice.amount_paid / 100)|number_format(2) }}
-                            </span>
-                            {% if invoice.hosted_invoice_url %}
-                                <a href="{{ invoice.hosted_invoice_url }}"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   class="text-xs text-primary hover:underline">
-                                    View
-                                </a>
-                            {% endif %}
-                            {% if invoice.invoice_pdf %}
-                                <a href="{{ invoice.invoice_pdf }}"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   class="text-xs text-muted-foreground hover:text-foreground">
-                                    PDF
-                                </a>
-                            {% endif %}
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
+                        <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
+                            {% if isActive %}bg-green-600 text-white
+                            {% elseif isTrialing %}bg-primary/10 text-primary
+                            {% elseif isPastDue %}bg-amber-500/10 text-amber-600 dark:text-amber-400
+                            {% else %}bg-destructive/10 text-destructive{% endif %}">
+                            {% if isActive %}Active
+                            {% elseif isTrialing %}Trial
+                            {% elseif isPastDue %}Past due
+                            {% elseif status == 'canceled' %}Canceled
+                            {% else %}{{ status|capitalize }}{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="divide-y divide-muted text-sm">
+                        {% if isTrialing and trialEndsAt %}
+                            <div class="flex items-center justify-between py-3 first:pt-0">
+                                <span class="text-muted-foreground">Trial ends</span>
+                                <span class="font-medium text-foreground">
+                                    {{ trialEndsAt|date('M j, Y') }}
+                                    {% if trialDaysLeft > 0 %}
+                                        <span class="ml-1 text-xs text-muted-foreground">({{ trialDaysLeft }} day{{ trialDaysLeft != 1 ? 's' : '' }} left)</span>
+                                    {% else %}
+                                        <span class="ml-1 text-xs text-destructive">(expired)</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
+
+                        {% if subscription.currentPeriodEnd %}
+                            <div class="flex items-center justify-between py-3 first:pt-0">
+                                <span class="text-muted-foreground">
+                                    {% if subscription.cancelAtPeriodEnd %}Access until{% else %}Next billing date{% endif %}
+                                </span>
+                                <span class="font-medium text-foreground">{{ subscription.currentPeriodEnd|date('M j, Y') }}</span>
+                            </div>
+                        {% endif %}
+
+                        {% if not subscription.plan.free and not subscription.plan.customQuote %}
+                            <div class="flex items-center justify-between py-3 first:pt-0">
+                                <span class="text-muted-foreground">Plan price</span>
+                                <span class="font-medium text-foreground">
+                                    {% if subscription.plan.monthlyPriceCents > 0 %}
+                                        ${{ (subscription.plan.monthlyPriceCents / 100)|number_format(0) }}/mo
+                                        {% if subscription.plan.annualPriceCents > 0 %}
+                                            or ${{ (subscription.plan.annualPriceCents / 100)|number_format(0) }}/yr
+                                        {% endif %}
+                                    {% else %}
+                                        Free
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
+
+                        {% if subscription.cancelAtPeriodEnd %}
+                            <div class="py-3 first:pt-0">
+                                <p class="text-sm text-amber-600 dark:text-amber-400">
+                                    Your subscription is set to cancel at the end of the current period. You can reactivate it at any time before then.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {# Actions #}
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        {% if hasStripe %}
+                            <form method="POST" action="{{ path('billing_portal') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('billing_portal') }}">
+                                <button type="submit" class="rounded-md bg-primary px-4 py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">
+                                    Manage billing
+                                </button>
+                            </form>
+                        {% elseif subscription.plan.free or isCanceled %}
+                            <a href="{{ path('billing_plans') }}" class="rounded-md bg-primary px-4 py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">
+                                Upgrade plan
+                            </a>
+                        {% elseif isTrialing %}
+                            <a href="{{ path('billing_plans') }}" class="rounded-md bg-primary px-4 py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">
+                                Add payment method
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Billing history #}
+                {% if invoices|length > 0 %}
+                <div class="rounded-[10px] border border-border">
+                    <div class="border-b border-border px-6 py-4">
+                        <h2 class="text-[15px] font-semibold text-foreground">Billing history</h2>
+                        <p class="text-sm text-muted-foreground">Your recent invoices</p>
+                    </div>
+                    <ul class="divide-y divide-muted">
+                        {% for invoice in invoices %}
+                            <li class="flex items-center justify-between gap-4 px-6 py-4">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-foreground">
+                                        {{ invoice.created|date('M j, Y') }}
+                                        {% if invoice.number %}
+                                            <span class="ml-1 text-xs text-muted-foreground">#{{ invoice.number }}</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {% if invoice.status == 'paid' %}
+                                            <span class="text-success">Paid</span>
+                                        {% elseif invoice.status == 'open' %}
+                                            <span class="text-amber-600 dark:text-amber-400">Open</span>
+                                        {% else %}
+                                            {{ invoice.status|capitalize }}
+                                        {% endif %}
+                                        {% if invoice.lines.data|length > 0 %}
+                                            &middot; {{ invoice.lines.data[0].description }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-4 shrink-0">
+                                    <span class="text-sm font-medium text-foreground">
+                                        ${{ (invoice.amount_paid / 100)|number_format(2) }}
+                                    </span>
+                                    {% if invoice.hosted_invoice_url %}
+                                        <a href="{{ invoice.hosted_invoice_url }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="text-xs text-primary hover:underline">
+                                            View
+                                        </a>
+                                    {% endif %}
+                                    {% if invoice.invoice_pdf %}
+                                        <a href="{{ invoice.invoice_pdf }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="text-xs text-muted-foreground hover:text-foreground">
+                                            PDF
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% elseif hasStripe %}
+                <div class="rounded-[10px] border border-border p-6">
+                    <p class="text-sm text-muted-foreground">No invoices yet.</p>
+                </div>
+                {% endif %}
+            {% endif %}
         </div>
-        {% elseif hasStripe %}
-        <div class="rounded-xl border bg-card p-6 shadow-sm">
-            <p class="text-sm text-muted-foreground">No invoices yet.</p>
-        </div>
-        {% endif %}
-    {% endif %}
+    </div>
 </div>
 {% endblock %}

@@ -14,8 +14,8 @@
         <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ message }}</div>
     {% endfor %}
 
-    <div class="rounded-xl border bg-card p-6 shadow-sm">
-        {{ form_start(form, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+    <div class="rounded-[10px] border border-border p-6">
+        {{ form_start(form, {'attr': {'class': 'space-y-3.5', 'novalidate': true}}) }}
 
             {% if form.vars.errors|length > 0 %}
                 <div class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -27,9 +27,9 @@
 
             {{ forms.field(form.email, {'autocomplete': 'email'}) }}
 
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center justify-between gap-3 pt-1.5">
                 <a href="{{ path('org_settings') }}" class="text-sm text-muted-foreground hover:underline">Cancel</a>
-                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                <button type="submit" class="rounded-md bg-primary px-[18px] py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">
                     Send invitation
                 </button>
             </div>
