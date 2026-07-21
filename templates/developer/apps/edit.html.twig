@@ -3,7 +3,7 @@
 {% block title %}Edit {{ client.name }}{% endblock %}
 
 {% block main %}
-<div class="max-w-2xl mx-auto space-y-6">
+<div class="max-w-2xl space-y-6">
     <div>
         <a href="{{ path('developer_apps_show', {id: client.id}) }}" class="text-sm text-muted-foreground hover:text-foreground">← {{ client.name }}</a>
         <h1 class="mt-2 text-2xl font-semibold text-foreground">Edit Application</h1>
