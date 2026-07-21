@@ -1,7 +1,60 @@
 {% props admin = false %}
-<header class="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-6">
-    <div>{% block breadcrumb %}{% endblock %}</div>
-    <div class="flex items-center gap-4">
+{% set cr = app.request.attributes.get('_route') %}
+{% set breadcrumb = 'Dashboard' %}
+{% if admin %}
+    {% if cr starts with 'admin_users' %}
+        {% set breadcrumb = 'Users' %}
+    {% elseif cr starts with 'admin_orgs' %}
+        {% set breadcrumb = 'Organizations' %}
+    {% elseif cr starts with 'admin_plans' %}
+        {% set breadcrumb = 'Plans' %}
+    {% elseif cr starts with 'admin_entitlements' %}
+        {% set breadcrumb = 'Entitlements' %}
+    {% elseif cr == 'admin_billing_settings' %}
+        {% set breadcrumb = 'Billing Settings' %}
+    {% elseif cr starts with 'admin_audit_log' %}
+        {% set breadcrumb = 'Audit Log' %}
+    {% elseif cr starts with 'admin_webhooks' %}
+        {% set breadcrumb = 'Webhooks' %}
+    {% elseif cr starts with 'admin_impersonate' %}
+        {% set breadcrumb = 'Impersonate' %}
+    {% else %}
+        {% set breadcrumb = 'Dashboard' %}
+    {% endif %}
+{% else %}
+    {% if cr starts with 'developer_webhooks' %}
+        {% set breadcrumb = 'Webhooks' %}
+    {% elseif cr starts with 'developer_apps' %}
+        {% set breadcrumb = 'OAuth Apps' %}
+    {% elseif cr starts with 'developer' %}
+        {% set breadcrumb = 'Developer' %}
+    {% elseif cr == 'org_settings_billing' %}
+        {% set breadcrumb = 'Billing' %}
+    {% elseif cr starts with 'org_' %}
+        {% set breadcrumb = 'Organization' %}
+    {% elseif cr starts with 'profile_' %}
+        {% set breadcrumb = 'Profile' %}
+    {% elseif cr starts with 'notifications_' %}
+        {% set breadcrumb = 'Notifications' %}
+    {% else %}
+        {% set breadcrumb = 'Dashboard' %}
+    {% endif %}
+{% endif %}
+<header class="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-6">
+    <div class="min-w-0 flex-1">
+        {% block breadcrumb %}
+            <h1 class="truncate text-lg font-semibold text-foreground">{{ breadcrumb }}</h1>
+        {% endblock %}
+    </div>
+    <div class="hidden shrink-0 md:block">
+        <button type="button" disabled title="Search — coming soon"
+                class="flex w-64 cursor-not-allowed items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span class="flex-1 truncate text-left">Search...</span>
+            <kbd class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+        </button>
+    </div>
+    <div class="flex shrink-0 items-center gap-4">
         {% block topbar_actions %}{% endblock %}
         {% if app.user and not admin %}
             {{ render(controller('App\\Controller\\NotificationController::bell')) }}
@@ -15,7 +68,7 @@
                 >
                     <twig:Avatar fallback="{{ app.user.email|slice(0,2) }}" size="sm" />
                 </button>
-                <div data-dropdown-target="menu" hidden class="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-popover py-1 shadow-md">
+                <div data-dropdown-target="menu" hidden class="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-popover py-1 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
                     <a href="{{ path('profile_index') }}" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent">Profile</a>
                     <twig:Separator />
                     <a href="{{ path('auth_logout') }}" class="block px-4 py-2 text-sm text-destructive hover:bg-accent">Sign out</a>
