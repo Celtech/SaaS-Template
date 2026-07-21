@@ -14,7 +14,7 @@
                 {% elseif user.suspended %}
                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Suspended</span>
                 {% else %}
-                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-600 text-white">Active</span>
                 {% endif %}
             </div>
             <p class="mt-1 text-sm text-muted-foreground">{{ user.email }}</p>
@@ -24,7 +24,7 @@
         <div class="flex gap-2">
             {% if not user.suspended %}
                 <a href="{{ path('admin_impersonate_confirm', {id: user.id}) }}"
-                   class="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                   class="inline-flex items-center rounded-md border border-warning px-4 py-2 text-sm font-medium text-warning hover:bg-warning hover:text-warning-foreground">
                     Impersonate
                 </a>
             {% endif %}
@@ -125,7 +125,7 @@
                     <dt class="text-muted-foreground">Status</dt>
                     <dd>
                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                            {{ subscription.status.value in ['active', 'trialing'] ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground' }}">
+                            {{ subscription.status.value in ['active', 'trialing'] ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground' }}">
                             {{ subscription.status.value|replace({'_': ' '})|capitalize }}
                         </span>
                     </dd>

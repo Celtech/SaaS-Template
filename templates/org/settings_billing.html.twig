@@ -48,7 +48,7 @@
                     <p class="mt-1 text-2xl font-bold text-foreground">{{ subscription.plan.name }}</p>
                 </div>
                 <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                    {% if isActive %}bg-success/10 text-success
+                    {% if isActive %}bg-green-600 text-white
                     {% elseif isTrialing %}bg-primary/10 text-primary
                     {% elseif isPastDue %}bg-amber-500/10 text-amber-600 dark:text-amber-400
                     {% else %}bg-destructive/10 text-destructive{% endif %}">
