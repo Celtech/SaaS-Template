@@ -4,29 +4,21 @@
 {% block title %}Security{% endblock %}
 
 {% block main %}
-<div class="max-w-2xl space-y-6">
+<div class="space-y-6">
     <div>
         <h1 class="text-2xl font-semibold text-foreground">Profile</h1>
         <p class="mt-1 text-sm text-muted-foreground">Manage your account information</p>
     </div>
 
-    <div class="flex gap-4 border-b text-sm">
-        <a href="{{ path('profile_index') }}" class="pb-3 text-muted-foreground hover:text-foreground">
-            General
-        </a>
-        <a href="{{ path('profile_security') }}" class="border-b-2 border-primary pb-3 font-medium text-foreground">
-            Security
-        </a>
-        <a href="{{ path('profile_notifications') }}" class="pb-3 text-muted-foreground hover:text-foreground">
-            Notifications
-        </a>
-    </div>
+    <div class="grid grid-cols-[200px_1fr] gap-8">
+        {% include 'profile/_tabs.html.twig' with {active: 'security'} %}
 
+        <div class="min-w-0 space-y-5">
     {# Change password #}
-    <div class="rounded-xl border bg-card p-6 shadow-sm">
-        <h2 class="mb-4 text-base font-semibold text-card-foreground">Change password</h2>
+    <div class="rounded-[10px] border border-border p-6">
+        <h2 class="mb-[18px] text-[15px] font-semibold text-foreground">Change password</h2>
 
-        {{ form_start(changePasswordForm, {'attr': {'class': 'space-y-4', 'novalidate': true}}) }}
+        {{ form_start(changePasswordForm, {'attr': {'class': 'space-y-3.5', 'novalidate': true}}) }}
 
             {{ forms.field(changePasswordForm.currentPassword, {'autocomplete': 'current-password'}) }}
             {{ forms.field(changePasswordForm.newPassword.first, {'autocomplete': 'new-password'}) }}
@@ -42,8 +34,8 @@
     </div>
 
     {# Two-factor authentication #}
-    <div class="rounded-xl border bg-card p-6 shadow-sm">
-        <h2 class="mb-1 text-base font-semibold text-card-foreground">Two-factor authentication</h2>
+    <div class="rounded-[10px] border border-border p-6">
+        <h2 class="mb-1 text-[15px] font-semibold text-foreground">Two-factor authentication</h2>
         <p class="mb-5 text-sm text-muted-foreground">Add an extra layer of security. Enable one or more methods below.</p>
 
         {% for message in app.flashes('error') %}
@@ -193,10 +185,10 @@
     </div>
 
     {# Active sessions #}
-    <div class="rounded-xl border bg-card p-6 shadow-sm">
+    <div class="rounded-[10px] border border-border p-6">
         <div class="mb-4 flex items-center justify-between">
             <div>
-                <h2 class="text-base font-semibold text-card-foreground">Active sessions</h2>
+                <h2 class="text-[15px] font-semibold text-foreground">Active sessions</h2>
                 <p class="mt-1 text-sm text-muted-foreground">Devices currently signed in to your account.</p>
             </div>
             {% if activeSessions|length > 1 %}
@@ -240,8 +232,8 @@
     </div>
 
     {# Danger zone #}
-    <div class="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
-        <h2 class="mb-2 text-base font-semibold text-destructive">Danger zone</h2>
+    <div class="rounded-[10px] border border-destructive/30 bg-destructive/5 p-6">
+        <h2 class="mb-2 text-[15px] font-semibold text-destructive">Danger zone</h2>
         <p class="mb-4 text-sm text-muted-foreground">
             Request permanent deletion of your account and all associated data.
             This action is irreversible.
@@ -253,6 +245,8 @@
                 Delete my account
             </button>
         </form>
+    </div>
+        </div>
     </div>
 </div>
 {% endblock main %}

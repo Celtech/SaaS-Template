@@ -1,0 +1,15 @@
+{# Props: active ('general'|'security'|'notifications') #}
+<div class="flex flex-col gap-0.5">
+    <a href="{{ path('profile_index') }}"
+       class="rounded-md px-3 py-2 text-[13.5px] transition-colors {{ active == 'general' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60' }}">
+        General
+    </a>
+    <a href="{{ path('profile_security') }}"
+       class="rounded-md px-3 py-2 text-[13.5px] transition-colors {{ active == 'security' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60' }}">
+        Security
+    </a>
+    <a href="{{ path('profile_notifications') }}"
+       class="rounded-md px-3 py-2 text-[13.5px] transition-colors {{ active == 'notifications' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60' }}">
+        Notifications
+    </a>
+</div>
