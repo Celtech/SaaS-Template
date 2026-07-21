@@ -38,28 +38,28 @@
             </a>
         </div>
     {% else %}
-        <div class="rounded-lg border border-border overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="border-b border-border bg-muted/40">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Client ID</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Grants</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
-                        <th class="px-4 py-3"></th>
+        <div class="rounded-[10px] border border-border overflow-hidden">
+            <table class="w-full text-[13px]">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Name</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Client ID</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Grants</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Created</th>
+                        <th class="px-4 py-2.5"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
+                <tbody class="divide-y divide-muted">
                     {% for client in clients %}
-                        <tr class="bg-card hover:bg-muted/20 transition-colors">
-                            <td class="px-4 py-3 font-medium text-foreground">{{ client.name }}</td>
-                            <td class="px-4 py-3">
+                        <tr class="hover:bg-muted/30 transition-colors">
+                            <td class="px-4 py-2.5 font-medium text-foreground">{{ client.name }}</td>
+                            <td class="px-4 py-2.5">
                                 <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{{ client.clientId }}</code>
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-2.5">
                                 <div class="flex flex-wrap gap-1">
                                     {% for grant in client.allowedGrants %}
-                                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                        <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                                             {% if grant == 'client_credentials' %}M2M
                                             {% elseif grant == 'authorization_code' %}Auth Code
                                             {% elseif grant == 'urn:ietf:params:oauth:grant-type:device_code' %}Device
@@ -69,8 +69,8 @@
                                     {% endfor %}
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ client.createdAt|date('M j, Y') }}</td>
-                            <td class="px-4 py-3 text-right">
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ client.createdAt|date('M j, Y') }}</td>
+                            <td class="px-4 py-2.5 text-right">
                                 <a href="{{ path('developer_apps_show', {id: client.id}) }}"
                                    class="text-sm text-primary hover:underline">Details</a>
                             </td>

@@ -21,27 +21,27 @@
     <form method="GET" class="flex gap-2">
         <input type="hidden" name="session" value="">
         <input type="text" name="action" value="{{ action }}" placeholder="Filter by action prefix…"
-               class="flex-1 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+               class="flex-1 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         <input type="text" name="actor" value="{{ actor }}" placeholder="Actor UUID…"
-               class="w-72 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Filter</button>
+               class="w-72 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <button type="submit" class="rounded-md bg-primary px-4 py-[7px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">Filter</button>
         {% if action or actor or session %}
-            <a href="{{ path('admin_audit_log_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+            <a href="{{ path('admin_audit_log_index') }}" class="rounded-md border px-4 py-[7px] text-[13px] font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
         {% endif %}
     </form>
 
-    <div class="rounded-lg border bg-card">
-        <table class="w-full text-sm">
+    <div class="rounded-[10px] border border-border overflow-hidden">
+        <table class="w-full text-[13px]">
             <thead>
-                <tr class="border-b">
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Actor</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Subject</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Session</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">When</th>
+                <tr class="border-b border-border">
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Action</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Actor</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Subject</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Session</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">When</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y divide-muted">
                 {% for entry in entries %}
                 {% set isImpersonationEvent = entry.action starts with 'impersonation.' %}
                 <tr class="hover:bg-muted/30 {{ isImpersonationEvent ? 'bg-purple-50/50 dark:bg-purple-900/10' : '' }}">

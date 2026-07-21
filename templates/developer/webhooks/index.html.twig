@@ -38,31 +38,31 @@
             </a>
         </div>
     {% else %}
-        <div class="rounded-lg border border-border overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="border-b border-border bg-muted/40">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">URL</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Events</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                        <th class="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
-                        <th class="px-4 py-3"></th>
+        <div class="rounded-[10px] border border-border overflow-hidden">
+            <table class="w-full text-[13px]">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">URL</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Events</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Created</th>
+                        <th class="px-4 py-2.5"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
+                <tbody class="divide-y divide-muted">
                     {% for endpoint in endpoints %}
-                        <tr class="bg-card hover:bg-muted/20 transition-colors">
-                            <td class="px-4 py-3 font-mono text-xs text-foreground">{{ endpoint.url }}</td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ endpoint.events|length }} event{{ endpoint.events|length != 1 ? 's' : '' }}</td>
-                            <td class="px-4 py-3">
+                        <tr class="hover:bg-muted/30 transition-colors">
+                            <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ endpoint.url }}</td>
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ endpoint.events|length }} event{{ endpoint.events|length != 1 ? 's' : '' }}</td>
+                            <td class="px-4 py-2.5">
                                 {% if endpoint.active %}
-                                    <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                                    <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-[11px] text-green-800 dark:bg-green-900/30 dark:text-green-400">Active</span>
                                 {% else %}
-                                    <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Disabled</span>
+                                    <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Disabled</span>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ endpoint.createdAt|date('M j, Y') }}</td>
-                            <td class="px-4 py-3 text-right">
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ endpoint.createdAt|date('M j, Y') }}</td>
+                            <td class="px-4 py-2.5 text-right">
                                 <a href="{{ path('developer_webhooks_show', {id: endpoint.id}) }}"
                                    class="text-sm text-primary hover:underline">Details</a>
                             </td>

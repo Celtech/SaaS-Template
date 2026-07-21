@@ -21,29 +21,29 @@
         {% endfor %}
     {% endfor %}
 
-    <div class="rounded-lg border bg-card">
-        <table class="w-full text-sm">
+    <div class="rounded-[10px] border border-border overflow-hidden">
+        <table class="w-full text-[13px]">
             <thead>
-                <tr class="border-b">
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Slug</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                <tr class="border-b border-border">
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Slug</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Type</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Description</th>
+                    <th class="px-4 py-2.5 text-right font-medium text-muted-foreground">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y divide-muted">
                 {% for entitlement in entitlements %}
                 <tr class="hover:bg-muted/30">
-                    <td class="px-4 py-3 font-medium text-foreground">{{ entitlement.name }}</td>
-                    <td class="px-4 py-3 font-mono text-xs text-muted-foreground">{{ entitlement.slug }}</td>
-                    <td class="px-4 py-3">
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                    <td class="px-4 py-2.5 font-medium text-foreground">{{ entitlement.name }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">{{ entitlement.slug }}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
                             {{ entitlement.type.value }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-muted-foreground text-xs">{{ entitlement.description ?? '—' }}</td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-2.5 text-muted-foreground text-xs">{{ entitlement.description ?? '—' }}</td>
+                    <td class="px-4 py-2.5 text-right">
                         <a href="{{ path('admin_entitlements_edit', {id: entitlement.id}) }}"
                            class="text-xs text-muted-foreground hover:text-foreground">Edit</a>
                     </td>
