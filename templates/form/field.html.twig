@@ -1,13 +1,13 @@
 {% macro field(formField, extraAttr = {}) %}
     {%- set hasErrors = formField.vars.errors|length > 0 -%}
-    {%- set baseClass = 'w-full rounded-md border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50' -%}
+    {%- set baseClass = 'w-full rounded-md border px-3 py-[9px] text-[13.5px] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50' -%}
     {%- set stateClass = hasErrors
         ? 'border-destructive bg-destructive/5 focus:ring-destructive'
         : 'border-input bg-background focus:ring-ring' -%}
     {%- set mergedAttr = {'class': baseClass ~ ' ' ~ stateClass}|merge(extraAttr) -%}
 
-    <div class="space-y-1">
-        {{ form_label(formField, null, {'label_attr': {'class': 'block text-sm font-medium text-foreground'}}) }}
+    <div class="space-y-1.5">
+        {{ form_label(formField, null, {'label_attr': {'class': 'block text-[12.5px] font-medium text-muted-foreground'}}) }}
         {{ form_widget(formField, {'attr': mergedAttr}) }}
         {{ form_errors(formField) }}
     </div>
