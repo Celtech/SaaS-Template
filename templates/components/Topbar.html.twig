@@ -40,35 +40,40 @@
         {% set breadcrumb = 'Dashboard' %}
     {% endif %}
 {% endif %}
-<header class="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-6">
-    <div class="min-w-0 flex-1">
+<header class="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border bg-background px-8">
+    <div class="min-w-0 truncate text-[12.5px] text-muted-foreground">
         {% block breadcrumb %}
-            <h1 class="truncate text-lg font-semibold text-foreground">{{ breadcrumb }}</h1>
+            {{ app_name|default('SaaS Template') }}<span class="mx-1.5">/</span><span class="font-medium text-foreground">{{ breadcrumb }}</span>
         {% endblock %}
     </div>
-    <div class="hidden shrink-0 md:block">
-        <button type="button" disabled title="Search — coming soon"
-                class="flex w-64 cursor-not-allowed items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <span class="flex-1 truncate text-left">Search...</span>
-            <kbd class="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
-        </button>
+    <div class="justify-self-center">
+        <div title="Search — coming soon"
+             class="flex w-[340px] cursor-not-allowed items-center gap-2 rounded-lg bg-muted px-3.5 py-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <span class="truncate text-[13px] text-muted-foreground/70">Type a command or search...</span>
+            <kbd class="ml-auto shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground/70">⌘K</kbd>
+        </div>
     </div>
-    <div class="flex shrink-0 items-center gap-4">
+    <div class="flex items-center justify-self-end gap-3.5">
         {% block topbar_actions %}{% endblock %}
         {% if app.user and not admin %}
             {{ render(controller('App\\Controller\\NotificationController::bell')) }}
+            <div class="h-5 w-px bg-border"></div>
         {% endif %}
         {% if app.user %}
             <div class="relative" data-controller="dropdown">
                 <button
                     data-action="dropdown#toggle"
-                    class="flex items-center gap-2 rounded-md p-1.5 hover:bg-accent"
+                    class="flex items-center gap-2.5 rounded-md"
                     aria-label="User menu"
                 >
-                    <twig:Avatar fallback="{{ app.user.email|slice(0,2) }}" size="sm" />
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">{{ app.user.email|slice(0,2)|upper }}</span>
+                    <span class="hidden text-left leading-tight md:block">
+                        <span class="block text-[12.5px] font-semibold text-foreground">{{ app.user.name }}</span>
+                        <span class="block text-[11px] text-muted-foreground">{{ app.user.email }}</span>
+                    </span>
                 </button>
-                <div data-dropdown-target="menu" hidden class="absolute right-0 top-full mt-1 w-48 rounded-md border border-border bg-popover py-1 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
+                <div data-dropdown-target="menu" hidden class="absolute right-0 top-full mt-2 w-48 rounded-md border border-border bg-popover py-1 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
                     <a href="{{ path('profile_index') }}" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent">Profile</a>
                     <twig:Separator />
                     <a href="{{ path('auth_logout') }}" class="block px-4 py-2 text-sm text-destructive hover:bg-accent">Sign out</a>
