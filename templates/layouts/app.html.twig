@@ -6,7 +6,7 @@
     {% if is_granted('IS_IMPERSONATOR') %}
         {% set _imp = app.session.get('_impersonation') %}
         {% set _exitUrl = (_imp.return_url ?? '/admin/users') ~ '?_switch_user=_exit' %}
-        <div class="flex shrink-0 items-center justify-between gap-4 bg-purple-600 px-6 py-2.5 text-sm text-white">
+        <div class="flex shrink-0 items-center justify-between gap-4 bg-warning px-6 py-2.5 text-sm text-warning-foreground">
             <div class="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
                 <p class="font-medium">
@@ -14,7 +14,7 @@
                 </p>
             </div>
             <a href="{{ _exitUrl }}"
-               class="shrink-0 rounded-md border border-white/40 px-3 py-1 text-xs font-medium hover:bg-white/10">
+               class="shrink-0 rounded-md border border-warning-foreground/30 px-3 py-1 text-xs font-medium hover:bg-warning-foreground/10">
                 Exit impersonation
             </a>
         </div>

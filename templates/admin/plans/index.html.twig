@@ -21,43 +21,43 @@
         {% endfor %}
     {% endfor %}
 
-    <div class="rounded-lg border bg-card">
-        <table class="w-full text-sm">
+    <div class="rounded-[10px] border border-border overflow-hidden">
+        <table class="w-full text-[13px]">
             <thead>
-                <tr class="border-b">
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Slug</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Monthly</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Annual</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Stripe product</th>
-                    <th class="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                <tr class="border-b border-border">
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Slug</th>
+                    <th class="px-4 py-2.5 text-right font-medium text-muted-foreground">Monthly</th>
+                    <th class="px-4 py-2.5 text-right font-medium text-muted-foreground">Annual</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Stripe product</th>
+                    <th class="px-4 py-2.5 text-center font-medium text-muted-foreground">Status</th>
+                    <th class="px-4 py-2.5 text-right font-medium text-muted-foreground">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y divide-muted">
                 {% for plan in plans %}
                 <tr class="hover:bg-muted/30">
-                    <td class="px-4 py-3 font-medium text-foreground">
+                    <td class="px-4 py-2.5 font-medium text-foreground">
                         {{ plan.name }}
                         {% if plan.free %}<span class="ml-1 text-xs text-muted-foreground">(free)</span>{% endif %}
                     </td>
-                    <td class="px-4 py-3 font-mono text-xs text-muted-foreground">{{ plan.slug }}</td>
-                    <td class="px-4 py-3 text-right text-muted-foreground">
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">{{ plan.slug }}</td>
+                    <td class="px-4 py-2.5 text-right text-muted-foreground">
                         {% if plan.monthlyPriceCents > 0 %}${{ (plan.monthlyPriceCents / 100)|number_format(2) }}{% else %}—{% endif %}
                     </td>
-                    <td class="px-4 py-3 text-right text-muted-foreground">
+                    <td class="px-4 py-2.5 text-right text-muted-foreground">
                         {% if plan.annualPriceCents > 0 %}${{ (plan.annualPriceCents / 100)|number_format(2) }}{% else %}—{% endif %}
                     </td>
-                    <td class="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    <td class="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                         {{ plan.stripeProductId ?? '—' }}
                     </td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                            {{ plan.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground' }}">
+                    <td class="px-4 py-2.5 text-center">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium
+                            {{ plan.active ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground' }}">
                             {{ plan.active ? 'Active' : 'Inactive' }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-2.5 text-right">
                         <div class="flex items-center justify-end gap-2">
                             <a href="{{ path('admin_plans_entitlements', {id: plan.id}) }}"
                                class="text-xs text-muted-foreground hover:text-foreground">Entitlements</a>

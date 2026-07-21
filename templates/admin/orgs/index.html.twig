@@ -10,34 +10,34 @@
 
     <form method="GET" class="flex gap-2">
         <input type="text" name="q" value="{{ search }}" placeholder="Search by name…"
-               class="flex-1 rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-        <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Search</button>
+               class="flex-1 rounded-md border bg-background px-3 py-[7px] text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <button type="submit" class="rounded-md bg-primary px-4 py-[7px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90">Search</button>
         {% if search %}
-            <a href="{{ path('admin_orgs_index') }}" class="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
+            <a href="{{ path('admin_orgs_index') }}" class="rounded-md border px-4 py-[7px] text-[13px] font-medium text-muted-foreground hover:bg-accent/50">Clear</a>
         {% endif %}
     </form>
 
-    <div class="rounded-lg border bg-card">
-        <table class="w-full text-sm">
+    <div class="rounded-[10px] border border-border overflow-hidden">
+        <table class="w-full text-[13px]">
             <thead>
-                <tr class="border-b">
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Owner</th>
-                    <th class="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
-                    <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                <tr class="border-b border-border">
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Name</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Owner</th>
+                    <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Created</th>
+                    <th class="px-4 py-2.5 text-right font-medium text-muted-foreground">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y divide-muted">
                 {% for org in orgs %}
                 <tr class="hover:bg-muted/30">
-                    <td class="px-4 py-3 font-medium text-foreground">
+                    <td class="px-4 py-2.5 font-medium text-foreground">
                         <a href="{{ path('admin_orgs_show', {id: org.id}) }}" class="hover:underline">{{ org.name }}</a>
                     </td>
-                    <td class="px-4 py-3 text-muted-foreground text-sm">
+                    <td class="px-4 py-2.5 text-muted-foreground text-[13px]">
                         <a href="{{ path('admin_users_show', {id: org.owner.id}) }}" class="hover:underline">{{ org.owner.email }}</a>
                     </td>
-                    <td class="px-4 py-3 text-xs text-muted-foreground">{{ org.createdAt|date('Y-m-d') }}</td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-2.5 text-xs text-muted-foreground">{{ org.createdAt|date('Y-m-d') }}</td>
+                    <td class="px-4 py-2.5 text-right">
                         <a href="{{ path('admin_orgs_show', {id: org.id}) }}" class="text-xs text-muted-foreground hover:text-foreground">View</a>
                     </td>
                 </tr>

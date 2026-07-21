@@ -49,7 +49,7 @@
                 <dt class="text-muted-foreground">Status</dt>
                 <dd class="mt-1">
                     {% if endpoint.active %}
-                        <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900/30 dark:text-green-400">Active</span>
+                        <span class="inline-flex rounded-full bg-green-600 px-2 py-0.5 text-xs text-white">Active</span>
                     {% else %}
                         <span class="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Disabled</span>
                     {% endif %}
@@ -96,30 +96,30 @@
         </div>
     </div>
 
-    <div class="rounded-lg border border-border overflow-hidden">
-        <div class="border-b border-border bg-muted/40 px-4 py-3">
-            <h2 class="text-base font-medium text-foreground">Delivery log</h2>
+    <div class="rounded-[10px] border border-border overflow-hidden">
+        <div class="border-b border-border px-4 py-3">
+            <h2 class="text-[15px] font-semibold text-foreground">Delivery log</h2>
         </div>
         {% if deliveries is empty %}
             <p class="p-6 text-sm text-muted-foreground text-center">No deliveries yet.</p>
         {% else %}
-            <table class="w-full text-sm">
-                <thead class="border-b border-border bg-muted/20">
-                    <tr>
-                        <th class="px-4 py-2 text-left font-medium text-muted-foreground">Event</th>
-                        <th class="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
-                        <th class="px-4 py-2 text-left font-medium text-muted-foreground">Attempts</th>
-                        <th class="px-4 py-2 text-left font-medium text-muted-foreground">Last response</th>
-                        <th class="px-4 py-2 text-left font-medium text-muted-foreground">Sent</th>
+            <table class="w-full text-[13px]">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Event</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Attempts</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Last response</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-muted-foreground">Sent</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
+                <tbody class="divide-y divide-muted">
                     {% for delivery in deliveries %}
-                        <tr class="bg-card">
-                            <td class="px-4 py-2 font-mono text-xs text-foreground">{{ delivery.eventType }}</td>
-                            <td class="px-4 py-2">
+                        <tr>
+                            <td class="px-4 py-2.5 font-mono text-xs text-foreground">{{ delivery.eventType }}</td>
+                            <td class="px-4 py-2.5">
                                 {% set statusValue = delivery.status.value %}
-                                <span class="inline-flex rounded-full px-2 py-0.5 text-xs
+                                <span class="inline-flex rounded-full px-2 py-0.5 text-[11px]
                                     {{ statusValue == 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                                        statusValue == 'pending' ? 'bg-muted text-muted-foreground' :
                                        statusValue == 'failed' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -127,9 +127,9 @@
                                     {{ statusValue }}
                                 </span>
                             </td>
-                            <td class="px-4 py-2 text-muted-foreground">{{ delivery.attempts }}</td>
-                            <td class="px-4 py-2 text-muted-foreground">{{ delivery.lastResponseCode ?? '—' }}</td>
-                            <td class="px-4 py-2 text-muted-foreground">{{ delivery.createdAt|date('M j, Y H:i') }}</td>
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ delivery.attempts }}</td>
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ delivery.lastResponseCode ?? '—' }}</td>
+                            <td class="px-4 py-2.5 text-muted-foreground">{{ delivery.createdAt|date('M j, Y H:i') }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
