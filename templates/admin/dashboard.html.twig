@@ -9,6 +9,21 @@
         <p class="mt-1 text-sm text-muted-foreground">Manage plans, entitlements, and platform settings.</p>
     </div>
 
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">Total users</span>
+            <div id="stat-user-count" class="mt-2 text-[28px] font-bold text-foreground">{{ userCount }}</div>
+        </div>
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">Total organizations</span>
+            <div id="stat-organization-count" class="mt-2 text-[28px] font-bold text-foreground">{{ organizationCount }}</div>
+        </div>
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">Active subscriptions</span>
+            <div id="stat-active-subscription-count" class="mt-2 text-[28px] font-bold text-foreground">{{ activeSubscriptionCount }}</div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <a href="{{ path('admin_users_index') }}" class="rounded-lg border bg-card p-5 hover:bg-accent/30 transition-colors">
             <h2 class="font-medium text-foreground">Users</h2>

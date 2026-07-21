@@ -10,21 +10,21 @@
     </div>
 
     <div class="grid gap-4 sm:grid-cols-3">
-        <div class="rounded-xl border bg-card p-6 shadow-sm">
-            <p class="text-sm font-medium text-muted-foreground">Account</p>
-            <p class="mt-1 text-lg font-semibold text-card-foreground">{{ app.user.email }}</p>
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">Account</span>
+            <div class="mt-2 text-lg font-semibold text-foreground">{{ app.user.email }}</div>
         </div>
-        <div class="rounded-xl border bg-card p-6 shadow-sm">
-            <p class="text-sm font-medium text-muted-foreground">Email verified</p>
-            <p class="mt-1 text-lg font-semibold {% if app.user.emailVerified %}text-success{% else %}text-warning{% endif %}">
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">Email verified</span>
+            <div class="mt-2 text-lg font-semibold {% if app.user.emailVerified %}text-success{% else %}text-warning{% endif %}">
                 {% if app.user.emailVerified %}Verified{% else %}Pending{% endif %}
-            </p>
+            </div>
         </div>
-        <div class="rounded-xl border bg-card p-6 shadow-sm">
-            <p class="text-sm font-medium text-muted-foreground">2FA</p>
-            <p class="mt-1 text-lg font-semibold {% if app.user.totpEnabled %}text-success{% else %}text-muted-foreground{% endif %}">
+        <div class="rounded-[10px] border border-border p-5">
+            <span class="text-[12.5px] text-muted-foreground">2FA</span>
+            <div class="mt-2 text-lg font-semibold {% if app.user.totpEnabled %}text-success{% else %}text-muted-foreground{% endif %}">
                 {% if app.user.totpEnabled %}Enabled{% else %}Disabled{% endif %}
-            </p>
+            </div>
         </div>
     </div>
 </div>

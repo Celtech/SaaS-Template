@@ -26,6 +26,16 @@ class SubscriptionRepository extends ServiceEntityRepository
         return $this->findOneBy(['organization' => $org]);
     }
 
+    public function countByStatus(SubscriptionStatus $status): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.status = :status')
+            ->setParameter('status', $status)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function findByStripeSubscriptionId(string $stripeSubscriptionId): ?Subscription
     {
         return $this->findOneBy(['stripeSubscriptionId' => $stripeSubscriptionId]);
