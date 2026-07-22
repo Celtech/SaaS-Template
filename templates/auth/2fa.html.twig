@@ -3,7 +3,7 @@
 {% block title %}Two-factor authentication{% endblock %}
 
 {% block auth_content %}
-<div class="rounded-xl border bg-card p-8 shadow-sm">
+<div class="rounded-[10px] border border-border p-8">
     <div class="mb-6 text-center">
         <h1 class="text-2xl font-semibold text-card-foreground">Two-factor authentication</h1>
         <p class="mt-1 text-sm text-muted-foreground">
@@ -20,7 +20,7 @@
     <form method="post" action="{{ path('2fa_login_check') }}" class="space-y-4">
 
         <div class="space-y-1">
-            <label for="_auth_code" class="block text-sm font-medium text-foreground">Authentication code</label>
+            <label for="_auth_code" class="block text-[12.5px] font-medium text-muted-foreground">Authentication code</label>
             <input
                 type="text"
                 id="_auth_code"
@@ -38,7 +38,7 @@
 
         <button
             type="submit"
-            class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            class="w-full rounded-md bg-primary px-4 py-[9px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
             Verify
         </button>
