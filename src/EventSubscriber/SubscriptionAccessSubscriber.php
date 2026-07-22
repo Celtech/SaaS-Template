@@ -25,7 +25,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  *   - past_due / unpaid / canceled / terminal → billing_reactivate
  *
  * Routes excluded from the check: auth_*, billing_*, stripe_*, admin_*,
- * onboarding_*, 2fa*, _*, app_health.
+ * onboarding_*, 2fa*, profile_2fa*, profile_webauthn*, _*, app_health.
+ *
+ * The profile_2fa and profile_webauthn prefixes must stay excluded alongside the
+ * login-time '2fa' challenge routes — otherwise a ROLE_SUPER_ADMIN without TOTP and
+ * without a paid subscription gets bounced here by AdminTwoFactorEnforcement, then
+ * straight back there by this subscriber, forever (see issue #65).
  */
 final class SubscriptionAccessSubscriber implements EventSubscriberInterface
 {
@@ -36,6 +41,8 @@ final class SubscriptionAccessSubscriber implements EventSubscriberInterface
         'admin_',
         'onboarding_',
         '2fa',
+        'profile_2fa',
+        'profile_webauthn',
         '_',
         'app_health',
     ];
