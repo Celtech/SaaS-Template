@@ -52,6 +52,7 @@ final class ImpersonationSubscriber implements EventSubscriberInterface
             $sessionId = $request->getSession()->get('_impersonation_session_id');
             $data = $request->getSession()->get('_impersonation', []);
             $targetUserId = \is_array($data) && isset($data['target_user_id']) ? (string) $data['target_user_id'] : null;
+            $reason = \is_array($data) && ($data['expired'] ?? false) === true ? 'expired' : null;
 
             /** @var User $admin */
             $admin = $event->getTargetUser();
@@ -62,6 +63,7 @@ final class ImpersonationSubscriber implements EventSubscriberInterface
                     $admin->getId()->toRfc4122(),
                     $targetUserId,
                     $sessionId,
+                    $reason,
                 );
             }
 
