@@ -8,6 +8,7 @@ use App\Entity\OrgInvitation;
 use App\Entity\User;
 use App\Entity\UserRole;
 use App\Message\Notification\SendNotificationMessage;
+use App\Repository\AuditLogRepository;
 use App\Repository\RoleRepository;
 use App\Tests\FunctionalTestCase;
 use DateTimeImmutable;
@@ -73,6 +74,11 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $invitation = $this->em->getRepository(OrgInvitation::class)->findOneBy(['email' => 'newperson@example.com']);
         $this->assertNotNull($invitation);
         $this->assertTrue($invitation->isPending());
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findBySubject($invitation->getId()->toRfc4122(), 'org_invitation');
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('org.invitation.sent', $actions);
     }
 
     #[Test]
@@ -209,6 +215,11 @@ final class OrgInviteControllerTest extends FunctionalTestCase
         $this->em->clear();
         $revoked = $this->em->find(OrgInvitation::class, $invitation->getId());
         $this->assertNull($revoked);
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findBySubject($invId, 'org_invitation');
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('org.invitation.revoked', $actions);
     }
 
     #[Test]

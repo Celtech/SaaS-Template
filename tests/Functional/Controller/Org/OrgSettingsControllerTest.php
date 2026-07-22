@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Controller\Org;
 
 use App\Entity\UserRole;
+use App\Repository\AuditLogRepository;
 use App\Repository\RoleRepository;
 use App\Repository\UserRoleRepository;
 use App\Tests\FunctionalTestCase;
@@ -40,6 +41,10 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $this->assertNotNull($refreshed);
         $this->assertNotNull($refreshed->getOrganization());
         $this->assertSame('New Name Inc.', $refreshed->getOrganization()->getName());
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findByAction('org.settings.updated');
+        $this->assertNotEmpty($entries, 'Expected an org.settings.updated audit log entry.');
     }
 
     #[Test]
@@ -102,6 +107,11 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $refreshed = $this->em->find(\App\Entity\User::class, $member->getId());
         $this->assertNotNull($refreshed);
         $this->assertNull($refreshed->getOrganization());
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findBySubject($memberId, 'user');
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('org.member.removed', $actions);
     }
 
     #[Test]
@@ -159,6 +169,11 @@ final class OrgSettingsControllerTest extends FunctionalTestCase
         $slugs = array_map(static fn (UserRole $ur) => $ur->getRole()->getSlug(), $roles);
         $this->assertContains('org-admin', $slugs);
         $this->assertNotContains('org-member', $slugs);
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findBySubject($memberId, 'user');
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('org.member.role_changed', $actions);
     }
 
     private function generateCsrfToken(string $tokenId): string

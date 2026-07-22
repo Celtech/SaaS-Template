@@ -12,6 +12,7 @@ use App\Form\ChangePasswordForm;
 use App\Message\User\AnonymizeUserMessage;
 use App\Repository\UserSessionRepository;
 use App\Repository\WebauthnCredentialRepository;
+use App\Service\Audit\AuditLogger;
 use App\Service\Notification\NotificationDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,6 +34,7 @@ class SecurityController extends AbstractController
         private readonly MessageBusInterface $bus,
         private readonly WebauthnCredentialRepository $webauthnCredentialRepo,
         private readonly NotificationDispatcher $notifications,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -69,6 +71,7 @@ class SecurityController extends AbstractController
         $session->revoke();
         $this->em->flush();
 
+        $this->auditLogger->logSecurityEvent('session.revoked', $user->getId()->toRfc4122(), ['session_id' => $id]);
         $this->notifySessionRevoked($user);
         $this->addFlash('success', 'Session revoked.');
 
@@ -82,6 +85,7 @@ class SecurityController extends AbstractController
         $revoked = $this->sessionRepository->revokeAllForUser($user, $currentTokenHash);
 
         if ($revoked > 0) {
+            $this->auditLogger->logSecurityEvent('session.revoked_all', $user->getId()->toRfc4122(), ['count' => $revoked]);
             $this->notifySessionRevoked($user);
         }
 
