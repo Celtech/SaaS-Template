@@ -15,10 +15,13 @@ use App\Service\OrgInvitationService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -38,6 +41,8 @@ class RegistrationController extends AbstractController
         private readonly OrgInvitationRepository $invitationRepository,
         private readonly OrgInvitationService $invitationService,
         private readonly PlanTokenService $planTokenService,
+        #[Autowire(service: 'limiter.auth_register')]
+        private readonly RateLimiterFactory $registerLimiter,
     ) {
     }
 
@@ -66,6 +71,13 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $limit = $this->registerLimiter->create($request->getClientIp())->consume();
+            if (!$limit->isAccepted()) {
+                $retryAfter = max(0, $limit->getRetryAfter()->getTimestamp() - time());
+
+                throw new TooManyRequestsHttpException($retryAfter, 'Too many registration attempts. Please try again later.');
+            }
+
             $email = (string) $form->get('email')->getData();
             $name = (string) $form->get('name')->getData();
             $plainPassword = $form->get('plainPassword')->getData();
