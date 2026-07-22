@@ -62,8 +62,8 @@ final class OrgSettingsController extends AbstractController
             $oldName = $em->getUnitOfWork()->getOriginalEntityData($org)['name'] ?? $org->getName();
             $em->flush();
 
-            $auditLogger->logBillingEvent(
-                'org.settings.updated',
+            $auditLogger->logOrgEvent(
+                'settings.updated',
                 $org->getId()->toRfc4122(),
                 'organization',
                 ['name' => $oldName],
@@ -145,6 +145,7 @@ final class OrgSettingsController extends AbstractController
         Request $request,
         UserRepository $userRepository,
         OrgMemberService $memberService,
+        AuditLogger $auditLogger,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -169,6 +170,16 @@ final class OrgSettingsController extends AbstractController
 
         try {
             $memberService->removeMember($org, $member, $currentUser);
+
+            $auditLogger->logOrgEvent(
+                'member.removed',
+                $member->getId()->toRfc4122(),
+                'user',
+                null,
+                ['email' => $member->getEmail(), 'organization_id' => $org->getId()->toRfc4122()],
+                $currentUser->getId()->toRfc4122(),
+            );
+
             $this->addFlash('success', \sprintf('%s has been removed from the organization.', $member->getName()));
         } catch (LogicException $e) {
             $this->addFlash('error', $e->getMessage());
@@ -183,7 +194,9 @@ final class OrgSettingsController extends AbstractController
         Request $request,
         UserRepository $userRepository,
         RoleRepository $roleRepository,
+        UserRoleRepository $userRoleRepository,
         OrgMemberService $memberService,
+        AuditLogger $auditLogger,
     ): Response {
         /** @var User $currentUser */
         $currentUser = $this->getUser();
@@ -214,8 +227,21 @@ final class OrgSettingsController extends AbstractController
             return $this->redirectToRoute('org_settings');
         }
 
+        $oldRoles = $userRoleRepository->findForUser($member, $org->getId());
+        $oldRoleName = isset($oldRoles[0]) ? $oldRoles[0]->getRole()->getName() : null;
+
         try {
             $memberService->changeMemberRole($org, $member, $role);
+
+            $auditLogger->logOrgEvent(
+                'member.role_changed',
+                $member->getId()->toRfc4122(),
+                'user',
+                $oldRoleName !== null ? ['role' => $oldRoleName] : null,
+                ['role' => $role->getName()],
+                $currentUser->getId()->toRfc4122(),
+            );
+
             $this->addFlash('success', \sprintf('%s\'s role updated to %s.', $member->getName(), $role->getName()));
         } catch (LogicException $e) {
             $this->addFlash('error', $e->getMessage());

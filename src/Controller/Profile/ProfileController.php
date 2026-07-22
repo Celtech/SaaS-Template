@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Form\ChangePasswordForm;
 use App\Form\ProfileForm;
 use App\Repository\UserRepository;
+use App\Service\Audit\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ class ProfileController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly UserRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -59,8 +61,15 @@ class ProfileController extends AbstractController
 
                     return $this->redirectToRoute('profile_index');
                 }
+                $oldEmail = $user->getEmail();
                 $user->setEmail($newEmail);
                 $user->markEmailVerified(); // re-verify handled separately if needed
+
+                $this->auditLogger->logSecurityEvent(
+                    'email.changed',
+                    $user->getId()->toRfc4122(),
+                    ['old_email' => $oldEmail, 'new_email' => $newEmail],
+                );
             }
 
             $user->setName($newName);
@@ -90,6 +99,8 @@ class ProfileController extends AbstractController
             $newPassword = $form->get('newPassword')->getData();
             $user->setPassword($this->passwordHasher->hashPassword($user, $newPassword));
             $this->em->flush();
+
+            $this->auditLogger->logSecurityEvent('password.changed', $user->getId()->toRfc4122());
 
             $this->addFlash('success', 'Password changed successfully.');
         }

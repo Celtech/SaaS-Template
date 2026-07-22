@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Controller\Profile;
 use App\Entity\User;
 use App\Entity\UserSession;
 use App\Message\Notification\SendNotificationMessage;
+use App\Repository\AuditLogRepository;
 use App\Tests\FunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
@@ -43,6 +44,11 @@ final class SecurityControllerTest extends FunctionalTestCase
         $sent = $this->notificationMessagesFor($user);
         $this->assertCount(2, $sent);
         $this->assertSame('security.session_revoked', $sent[0]->type);
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findByActor($user->getId()->toRfc4122());
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('security.session.revoked', $actions);
     }
 
     #[Test]
@@ -62,6 +68,11 @@ final class SecurityControllerTest extends FunctionalTestCase
         $sent = $this->notificationMessagesFor($user);
         $this->assertCount(2, $sent);
         $this->assertSame('security.session_revoked', $sent[0]->type);
+
+        $auditLogRepo = static::getContainer()->get(AuditLogRepository::class);
+        $entries = $auditLogRepo->findByActor($user->getId()->toRfc4122());
+        $actions = array_map(static fn ($e) => $e->getAction(), $entries);
+        $this->assertContains('security.session.revoked_all', $actions);
     }
 
     #[Test]

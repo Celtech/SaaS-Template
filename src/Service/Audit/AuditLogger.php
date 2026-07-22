@@ -58,10 +58,24 @@ use Symfony\Component\Uid\Uuid;
  *   security.webauthn.key.removed     — security key / passkey removed
  *   security.account.locked           — account locked after repeated failures (context: failed_attempts)
  *   security.user.anonymized          — PII erased under GDPR/CCPA erasure request
+ *   security.password.changed         — password changed from the profile security page
+ *   security.email.changed            — login email changed from the profile page (context: old_email, new_email)
+ *   security.session.revoked          — a single session was revoked from the profile page
+ *   security.session.revoked_all      — all other sessions were revoked from the profile page
  *
  * ADMIN EVENTS  (logAdminAction)
  * Actions taken by administrators via the admin backend.
  * Pattern: admin.<resource>.<verb>  e.g. admin.user.suspended
+ *
+ * ORG EVENTS  (logOrgEvent)
+ * Organization self-service management actions taken by an org member
+ * (as opposed to ADMIN EVENTS, which are super-admin backend actions).
+ *
+ *   org.settings.updated              — organization name or settings changed
+ *   org.member.removed                — a member was removed from the organization
+ *   org.member.role_changed           — a member's org role was changed
+ *   org.invitation.sent               — an invitation to join the organization was sent
+ *   org.invitation.revoked            — a pending invitation was revoked
  *
  * BILLING EVENTS  (logBillingEvent)
  * Subscription and payment lifecycle events.
@@ -153,6 +167,22 @@ class AuditLogger
             $reason !== null ? ['reason' => $reason] : null,
             $impersonationSessionId,
         );
+    }
+
+    /**
+     * @param array<string, mixed>|null $oldValue
+     * @param array<string, mixed>|null $newValue
+     */
+    public function logOrgEvent(
+        string $action,
+        string $subjectId,
+        string $subjectType,
+        ?array $oldValue = null,
+        ?array $newValue = null,
+        ?string $actorId = null,
+        string $actorType = 'user',
+    ): void {
+        $this->write('org.' . $action, $actorId, $actorType, $subjectId, $subjectType, $oldValue, $newValue);
     }
 
     /**

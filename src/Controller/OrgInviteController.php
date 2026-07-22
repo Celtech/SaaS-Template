@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\OrgInviteType;
 use App\Repository\OrgInvitationRepository;
+use App\Service\Audit\AuditLogger;
 use App\Service\OrgInvitationService;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -25,6 +26,7 @@ final class OrgInviteController extends AbstractController
         private readonly OrgInvitationService $invitationService,
         private readonly OrgInvitationRepository $invitationRepository,
         private readonly EntityManagerInterface $em,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -50,7 +52,17 @@ final class OrgInviteController extends AbstractController
             $email = $data['email'];
 
             try {
-                $this->invitationService->sendInvite($org, $email, $user);
+                $invitation = $this->invitationService->sendInvite($org, $email, $user);
+
+                $this->auditLogger->logOrgEvent(
+                    'invitation.sent',
+                    $invitation->getId()->toRfc4122(),
+                    'org_invitation',
+                    null,
+                    ['email' => $email, 'organization_id' => $org->getId()->toRfc4122()],
+                    $user->getId()->toRfc4122(),
+                );
+
                 $this->addFlash('success', \sprintf('Invitation sent to %s.', $email));
 
                 return $this->redirectToRoute('org_settings');
@@ -96,10 +108,22 @@ final class OrgInviteController extends AbstractController
             return $this->redirectToRoute('org_settings');
         }
 
+        $invitationId = $invitation->getId()->toRfc4122();
+        $invitationEmail = $invitation->getEmail();
+
         $this->em->remove($invitation);
         $this->em->flush();
 
-        $this->addFlash('success', \sprintf('Invitation to %s has been revoked.', $invitation->getEmail()));
+        $this->auditLogger->logOrgEvent(
+            'invitation.revoked',
+            $invitationId,
+            'org_invitation',
+            ['email' => $invitationEmail],
+            null,
+            $user->getId()->toRfc4122(),
+        );
+
+        $this->addFlash('success', \sprintf('Invitation to %s has been revoked.', $invitationEmail));
 
         return $this->redirectToRoute('org_settings');
     }
