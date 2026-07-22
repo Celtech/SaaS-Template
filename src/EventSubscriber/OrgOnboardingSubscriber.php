@@ -14,7 +14,11 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 final class OrgOnboardingSubscriber implements EventSubscriberInterface
 {
-    private const EXCLUDED_ROUTE_PREFIXES = ['auth_', '2fa', '_', 'onboarding_', 'app_health'];
+    // 'profile_2fa'/'profile_webauthn' must stay excluded alongside the login-time '2fa'
+    // challenge routes — otherwise a ROLE_SUPER_ADMIN without TOTP and without an org gets
+    // bounced here by AdminTwoFactorEnforcement, then straight back there by this
+    // subscriber, forever (see issue #65).
+    private const EXCLUDED_ROUTE_PREFIXES = ['auth_', '2fa', 'profile_2fa', 'profile_webauthn', '_', 'onboarding_', 'app_health'];
 
     public function __construct(
         private readonly TokenStorageInterface $tokenStorage,

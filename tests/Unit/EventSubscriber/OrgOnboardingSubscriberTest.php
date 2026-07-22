@@ -133,6 +133,27 @@ final class OrgOnboardingSubscriberTest extends UnitTestCase
         }
     }
 
+    /**
+     * Regression test for #65: a ROLE_SUPER_ADMIN without TOTP and without an org was
+     * redirected to profile_2fa_setup by AdminTwoFactorEnforcement, then immediately
+     * bounced to onboarding_org by this subscriber (which didn't recognize
+     * profile_2fa_setup/profile_webauthn_register as exempt), then back again — forever.
+     */
+    #[Test]
+    public function itDoesNothingOnProfileTwoFactorAndWebauthnSetupRoutes(): void
+    {
+        $user = $this->makeVerifiedUserWithoutOrg();
+        $token = $this->createStub(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
+        $this->tokenStorage->method('getToken')->willReturn($token);
+
+        foreach (['profile_2fa_setup', 'profile_2fa_enable', 'profile_2fa_backup_codes', 'profile_webauthn_register'] as $route) {
+            $event = $this->makeMainRequestEvent('/', $route);
+            $this->subscriber->onKernelRequest($event);
+            $this->assertNull($event->getResponse(), "Expected no redirect for route: $route");
+        }
+    }
+
     #[Test]
     public function itRedirectsVerifiedUserWithoutOrgToOnboarding(): void
     {
