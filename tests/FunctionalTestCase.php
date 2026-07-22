@@ -29,6 +29,12 @@ abstract class FunctionalTestCase extends WebTestCase
         $this->em = $container->get(EntityManagerInterface::class);
         $this->hasher = $container->get(UserPasswordHasherInterface::class);
         $this->beginTransaction();
+
+        // cache.rate_limiter is filesystem-backed in test env (see cache.yaml) so it
+        // survives the DB transaction rollback below. Rate limiters keyed by a fixed
+        // value across tests (e.g. client IP) would otherwise leak state between test
+        // methods and produce flaky 429s unrelated to what the test is asserting.
+        $container->get('cache.rate_limiter')->clear();
     }
 
     protected function tearDown(): void
